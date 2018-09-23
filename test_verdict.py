@@ -196,9 +196,6 @@ class TestVerDict( unittest.TestCase ):
 
     def test_add( self ):
 
-        #DEBUG
-        import pdb; pdb.set_trace()
-
         d = verdict.Dict( { 1 : 1, 2 : 2 } )
         expected = { 1 : 2, 2 : 3, }
         actual = d + 1
