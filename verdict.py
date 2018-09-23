@@ -1,0 +1,522 @@
+#!/usr/bin/env python
+'''General utilities
+
+@author: Zach Hafen
+@contact: zachary.h.hafen@gmail.com
+@status: Development
+'''
+
+import collections
+# from contextlib import contextmanager
+# import errno
+# from functools import wraps
+# import importlib
+# import inspect
+# import itertools
+import numpy as np
+# import os
+# import shutil
+# import subprocess
+# import sys
+# import time
+# # Work for py2 and py3
+# try:
+#     from StringIO import StringIO
+# except ImportError:
+#         from io import StringIO
+
+########################################################################
+########################################################################
+
+class Dict( collections.Mapping ):
+    '''Replacement for dictionary that allows easier access to the attributes
+    and methods of the dictionary components. For example, if one has a smart
+    dictionary of TestClassA objects, each of which has a TestClassB attribute,
+    which in turn have a foo method, then smart_dict.test_class_b.foo(2) would
+    be a dict with foo calculated for each. In other words, it would be
+    equivalent to the following code:
+
+    results = {}
+    for key in smart_dict.keys():
+        results[key] = smart_dict[key].test_class_b.foo( 2 )
+    return results
+
+    NOTE: In Python 3, the parent class probably needs
+    to be switched to collections.abc.Mapping.
+    '''
+
+    def __init__( self, *args, **kwargs ):
+        self._storage = dict( *args, **kwargs )
+
+    def __iter__( self ):
+        return iter( self._storage )
+
+    def __len__( self ):
+        return len( self._storage )
+
+    def __getitem__( self, item ):
+        return self._storage[item]
+
+    def __setitem__( self, key, item ):
+        self._storage[key] = item
+
+    def __repr__( self ):
+
+        out_str = "Dict, {\n"
+
+        for key in self.keys():
+
+            def get_print_obj( obj ):
+                try:
+                    print_obj = obj.__repr__()
+                except:
+                    print_obj = obj
+                return print_obj
+
+            out_str += "{} : {},\n".format(
+                get_print_obj( key ),
+                get_print_obj( self._storage[key] ),
+            )
+
+        out_str += "}\n"
+
+        return out_str
+
+    def __getattr__( self, attr ):
+
+        results = {}
+        for key in self.keys():
+
+            results[key] = getattr( self._storage[key], attr )
+
+        return Dict( results )
+
+    def __call__( self, *args, **kwargs ):
+
+        results = {}
+        for key in self.keys():
+
+            results[key] = self._storage[key]( *args, **kwargs )
+
+        return Dict( results )
+
+    def call_custom_kwargs( self, kwargs, default_kwargs={}, verbose=False ):
+        '''Perform call, but using custom keyword arguments per dictionary tag.
+
+        Args:
+            kwargs (dict) : Custom keyword arguments to pass.
+            default_kwargs (dict) : Defaults shared between keyword arguments.
+
+        Returns:
+            results (dict) : Dictionary of results.
+        '''
+
+        used_kwargs = dict_from_defaults_and_variations( default_kwargs, kwargs )
+
+        results = {}
+        for key in self.keys():
+
+            if verbose:
+                print( "Calling for {}".format( key ) )
+
+            results[key] = self._storage[key]( **used_kwargs[key] )
+
+        return Dict( results )
+
+    ########################################################################
+
+    def call_iteratively( self, args_list ):
+
+        results = {}
+        for key in self.keys():
+
+            inner_results = []
+            for args in args_list:
+
+                inner_result = self._storage[key]( args )
+                inner_results.append( inner_result )
+
+            results[key] = inner_results
+
+        return results
+
+    ########################################################################
+    # For handling when the Smart Dict contains dictionaries
+    ########################################################################
+
+    def inner_item( self, item ):
+        '''When Dict is a dictionary of dicts themselves,
+        this can be used to get an item from those dictionaries.
+        '''
+
+        results = {}
+
+        for key in self.keys():
+
+            results[key] = self._storage[key][item]
+
+        return Dict( results )
+
+    def inner_keys( self ):
+
+        results = {}
+
+        for key in self.keys():
+
+            results[key] = self._storage[key].keys()
+
+        return Dict( results )
+
+    def transpose( self ):
+
+        results = {}
+
+        # Populate results dictionary
+        for key, item in self.items():
+            for inner_key in item.keys():
+
+                try:
+                    results[inner_key][key] = item[inner_key]
+                except KeyError:
+                    results[inner_key] = {}
+                    results[inner_key][key] = item[inner_key]
+
+        return Dict( results )
+
+    ########################################################################
+    # Operation Methods
+    ########################################################################
+
+    def __add__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key] + other[key]
+
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key] + other
+
+        return Dict( results )
+
+    __radd__ = __add__
+
+    def __sub__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key] - other[key]
+
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key] - other
+
+        return Dict( results )
+
+    def __rsub__( self, other ):
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = other[key] - self._storage[key]
+
+        else:
+            for key in self.keys():
+                results[key] = other - self._storage[key]
+
+        return Dict( results )
+
+    def __mul__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key]*other[key]
+
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key]*other
+
+        return Dict( results )
+
+    __rmul__ = __mul__
+
+    def __div__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key]/other[key]
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key]/other
+
+        return Dict( results )
+
+    def __rdiv__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = other[key]/self._storage[key]
+        else:
+            for key in self.keys():
+                results[key] = other/self._storage[key]
+
+        return Dict( results )
+
+    ########################################################################
+    # Other operations
+    ########################################################################
+
+    def sum_contents( self ):
+        '''Get the sum of all the contents inside the Dict.'''
+
+        for i, key in enumerate( self.keys() ):
+
+            # To handle non-standard items
+            # (e.g. things that aren't ints or floats )
+            if i == 0:
+                result = self._storage[key]
+
+            else:
+                result += self._storage[key]
+
+        return result
+
+    def keymax( self ):
+        
+        for key, item in self.items():
+            try:
+                if item_max < item:
+                    item_max = item
+                    key_max = key
+            except NameError:
+                item_max = item
+                key_max = key
+
+        return key_max, item_max
+
+    def keymin( self ):
+        
+        for key, item in self.items():
+            try:
+                if item_min > item:
+                    item_min = item
+                    key_min = key
+            except NameError:
+                item_min = item
+                key_min = key
+
+        return key_min, item_min
+
+    def apply( self, fn, *args, **kwargs ):
+        '''Apply some function to each item in the smart dictionary, and
+        return the results as a Dict.
+        '''
+
+        results = {}
+
+        for key, item in self.items():
+            results[key] = fn( item, *args, **kwargs )
+
+        return Dict( results )
+
+    def split_by_key_slice( self, sl, str_to_match=None ):
+        '''Break the smart dictionary into smaller smart dictionaries according
+        to a subset of the key.
+
+        Args:
+            sl (slice) :
+                Part of the key to use to make subsets.
+
+            str_to_match (str) :
+                If True, split into broad categories that match this string
+                in the given slice or don't.
+        '''
+
+        results = {}
+
+        if str_to_match is not None:
+            results[True] = Dict( {} )
+            results[False] = Dict( {} )
+
+        for key, item in self.items():
+
+            key_slice = key[sl]
+
+            if str_to_match is not None:
+                str_matches = key_slice == str_to_match
+                results[str_matches][key] = item
+            
+            else:
+                try:
+                    results[key_slice][key] = item
+                except KeyError:
+                    results[key_slice] = Dict( {} )
+                    results[key_slice][key] = item
+
+        return results
+
+    def split_by_dict( self, d, return_list=False ):
+        '''Break the smart dictionary into smaller smart dictionaries according
+        to their label provided by a dictionary
+
+        Args:
+            d (dict):
+                Dictionary to use to split into smaller dictionaries
+
+            return_list (bool) :
+                If True, return a list of arrays.
+        '''
+
+        results = {}
+    
+        for key, item in self.items():
+
+            try:
+                result_subkey = d[key]
+                try:
+                    results[result_subkey][key] = item
+                except KeyError:
+                    results[result_subkey] = Dict( {} )
+                    results[result_subkey][key] = item
+            except KeyError:
+                try:
+                    results['no label'][key] = item
+                except KeyError:
+                    results['no label'] = Dict( {} )
+                    results['no label'][key] = item
+        
+        if not return_list:
+            return results
+
+        final_results = []
+        for key, item in results.items():
+            final_results.append( item.array() )
+
+        return final_results
+
+    def log10( self ):
+        '''Wrapper for np.log10'''
+
+        return self.apply( np.log10 )
+
+    def array( self ):
+        '''Returns a np.ndarray with unique order (sorted keys )'''
+
+        values = [ x for _,x in sorted(zip( self.keys(), self.values() ) )]
+
+        return np.array( values )
+
+    def remove_empty_items( self ):
+        '''Look for empty items and delete them.'''
+
+        keys_to_delete = []
+        for key, item in self.items():
+            if len( item ) == 0:
+                keys_to_delete.append( key )
+
+        for key in keys_to_delete:
+            del self._storage[key]
+
+    ########################################################################
+    # Construction Methods
+    ########################################################################
+
+    @classmethod
+    def from_class_and_args( cls, contained_cls, args, default_args={}, ):
+        '''Alternate constructor. Creates a Dict of contained_cls objects,
+        with arguments passed to it from the dictionary created by
+        defaults and variations.
+
+        Args:
+            contained_cls (type of object/constructor):
+                What class should the smart dict consist of?
+
+            args (dict/other):
+                Arguments that should be passed to contained_cls. If not a
+                dict, assumed to be the first and only argument for
+                the constructor.
+
+            default_args:
+                Default arguments to fill in args
+
+        Returns:
+            Dict:
+                The constructed instance.
+        '''
+
+        kwargs = dict_from_defaults_and_variations( default_args, args )
+
+        storage = {}
+        for key in kwargs.keys():
+            if isinstance( kwargs[key], dict ):
+                storage[key] = contained_cls( **kwargs[key] )
+            else:
+                storage[key] = contained_cls( kwargs[key] )
+
+        return cls( storage )
+
+########################################################################
+
+def merge_two_dicts( dict_a, dict_b ):
+    '''Merges two dictionaries into a shallow copy.
+
+    Args:
+        dict_a (dict): First dictionary to merge.
+        dict_b (dict): Second dictionary to merge.
+
+    Returns:
+        dict:
+            Dictionary including elements from both.
+            dict_a's entries take priority over dict_b.
+    '''
+
+    merged_dict = dict_b.copy()
+    merged_dict.update( dict_a )
+
+    return merged_dict
+
+########################################################################
+
+def dict_from_defaults_and_variations( defaults, variations ):
+    '''Create a dictionary of dictionaries from a default dictionary
+        and variations on it.
+
+    Args:
+        defaults (dict):
+            Default dictionary. What each individual dictionary should
+            default to.
+
+        variations (dict of dicts):
+            Each dictionary contains what should be different. The key for
+            each dictionary should be a label for it.
+
+    Returns:
+        dict of dicts:
+            The results is basically variations, where each child dict
+            is merged with defaults.
+    '''
+
+    if len( defaults ) == 0:
+        return variations
+
+    result = {}
+    for key in variations.keys():
+
+        defaults_copy = defaults.copy()
+
+        defaults_copy.update( variations[key] )
+
+        result[key] = defaults_copy
+
+    return result
+
