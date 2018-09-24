@@ -10,6 +10,7 @@ import collections
 import h5py
 import numpy as np
 import os
+import pandas as pd
 
 ########################################################################
 ########################################################################
@@ -416,6 +417,27 @@ class Dict( collections.Mapping ):
         values = [ x for _,x in sorted(zip( self.keys(), self.values() ) )]
 
         return np.array( values )
+
+    ########################################################################
+
+    def to_df( self ):
+        '''Convert to a pandas DataFrame.
+        '''
+
+        dfs = []
+        for key, item in self.items():
+
+            data = {
+                'name': item.keys(),
+                key: item.values(),
+            }
+
+            df = pd.DataFrame( data )
+            df.set_index( 'name', inplace=True )
+
+            dfs.append( df )
+
+        return pd.concat( dfs, axis=1 )
 
     ########################################################################
 

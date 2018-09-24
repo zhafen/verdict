@@ -299,32 +299,32 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
-    # def test_to_df( self ):
-    #     '''Convert to a pandas DataFrame. This is desirable, but not high
-    #     priority, so I'll leave this test out for now.
-    #     '''
+    def test_to_df( self ):
+        '''Convert to a pandas DataFrame. This is desirable, but not high
+        priority, so I'll leave this test out for now.
+        '''
 
-    #     d = verdict.Dict( {
-    #         1 : verdict.Dict( {
-    #             'a': 1,
-    #             'b': 2,
-    #         } ),
-    #         2 : verdict.Dict( {
-    #             'a': 3,
-    #             'b': 4,
-    #         } ),
-    #     } )
+        d = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': 1,
+                'b': 2,
+            } ),
+            2 : verdict.Dict( {
+                'a': 3,
+                'b': 4,
+            } ),
+        } )
 
-    #     expected = pd.DataFrame( {
-    #         'name': [ 'a', 'b' ],
-    #         1: [ 1, 2, ],
-    #         2: [ 3, 4, ],
-    #     } )
-    #     expected.set_index( 'name', inplace=True )
+        expected = pd.DataFrame( {
+            'name': [ 'a', 'b' ],
+            1: [ 1, 2, ],
+            2: [ 3, 4, ],
+        } )
+        expected.set_index( 'name', inplace=True )
 
-    #     actual = d.to_df()
+        actual = d.to_df()
 
-    #     assert actual == expected
+        assert actual.equals( expected )
 
     ########################################################################
 
