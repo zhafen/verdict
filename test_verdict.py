@@ -360,6 +360,53 @@ class TestVerDict( unittest.TestCase ):
         if os.path.isfile( savefile ):
             os.remove( savefile )
 
+    ########################################################################
+
+    def test_to_hdf5_additional_nesting( self ):
+
+        savefile = 'to_hdf5_test.hdf5'
+
+        # Test data
+        d = verdict.Dict( {
+            'i' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': np.array([ 1., 2. ]),
+                    'b': np.array([ 3., 4. ]),
+                } ),
+                2 : verdict.Dict( {
+                    'a': np.array([ 5., 6. ]),
+                    'b': np.array([ 7., 8. ]),
+                } ),
+            } ),
+            'ii' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': np.array([ 10., 20. ]),
+                    'b': np.array([ 30., 40. ]),
+                } ),
+                2 : verdict.Dict( {
+                    'a': np.array([ 50., 60. ]),
+                    'b': np.array([ 70., 80. ]),
+                } ),
+            } ),
+        } )
+
+        # Try to save
+        d.to_hdf5( savefile )
+
+        # Compare
+        f = h5py.File( savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                for ii_key, ii_item in inner_item.items():
+                    npt.assert_allclose(
+                        ii_item,
+                        f[key][str(inner_key)][ii_key][...],
+                    )
+
+        # Delete spurious files
+        if os.path.isfile( savefile ):
+            os.remove( savefile )
+
 ########################################################################
 ########################################################################
 

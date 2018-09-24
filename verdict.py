@@ -407,7 +407,7 @@ class Dict( collections.Mapping ):
             del self._storage[key]
 
     ########################################################################
-    # Changing to other formats
+    # Methods for converting to and from other formats.
     ########################################################################
 
     def array( self ):
