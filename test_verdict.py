@@ -4,10 +4,7 @@
 from mock import patch
 import numpy as np
 import numpy.testing as npt
-import os
-import pdb
-import shutil
-import subprocess
+import pandas as pd
 import unittest
 
 import verdict
@@ -287,9 +284,9 @@ class TestVerDict( unittest.TestCase ):
     def test_array( self ):
 
         d = verdict.Dict( {
-            'a' : 1,
-            'c' : 2,
-            'b' : 3,
+            'a': 1,
+            'c': 2,
+            'b': 3,
         } )
 
         expected = np.array([ 1., 3., 2. ])
@@ -297,6 +294,35 @@ class TestVerDict( unittest.TestCase ):
         actual = d.array()
 
         npt.assert_allclose( expected, actual )
+
+    ########################################################################
+
+    # def test_to_df( self ):
+    #     '''Convert to a pandas DataFrame. This is desirable, but not high
+    #     priority, so I'll leave this test out for now.
+    #     '''
+
+    #     d = verdict.Dict( {
+    #         1 : verdict.Dict( {
+    #             'a': 1,
+    #             'b': 2,
+    #         } ),
+    #         2 : verdict.Dict( {
+    #             'a': 3,
+    #             'b': 4,
+    #         } ),
+    #     } )
+
+    #     expected = pd.DataFrame( {
+    #         'name': [ 'a', 'b' ],
+    #         1: [ 1, 2, ],
+    #         2: [ 3, 4, ],
+    #     } )
+    #     expected.set_index( 'name', inplace=True )
+
+    #     actual = d.to_df()
+
+    #     assert actual == expected
 
 ########################################################################
 ########################################################################

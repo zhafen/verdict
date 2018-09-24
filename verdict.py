@@ -7,23 +7,8 @@
 '''
 
 import collections
-# from contextlib import contextmanager
-# import errno
-# from functools import wraps
-# import importlib
-# import inspect
-# import itertools
+import h5py
 import numpy as np
-# import os
-# import shutil
-# import subprocess
-# import sys
-# import time
-# # Work for py2 and py3
-# try:
-#     from StringIO import StringIO
-# except ImportError:
-#         from io import StringIO
 
 ########################################################################
 ########################################################################
@@ -415,6 +400,10 @@ class Dict( collections.Mapping ):
         values = [ x for _,x in sorted(zip( self.keys(), self.values() ) )]
 
         return np.array( values )
+
+    def to_df( self ):
+        '''Convert to a DataFrame, if possible.
+        '''
 
     def remove_empty_items( self ):
         '''Look for empty items and delete them.'''
