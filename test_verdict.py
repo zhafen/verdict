@@ -2,8 +2,10 @@
 '''
 
 from mock import patch
+import h5py
 import numpy as np
 import numpy.testing as npt
+import os
 import pandas as pd
 import unittest
 
@@ -323,6 +325,40 @@ class TestVerDict( unittest.TestCase ):
     #     actual = d.to_df()
 
     #     assert actual == expected
+
+    ########################################################################
+
+    def test_to_hdf5( self ):
+
+        savefile = 'to_hdf5_test.hdf5'
+
+        # Test data
+        d = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': np.array([ 1., 2. ]),
+                'b': np.array([ 3., 4. ]),
+            } ),
+            2 : verdict.Dict( {
+                'a': np.array([ 5., 6. ]),
+                'b': np.array([ 7., 8. ]),
+            } ),
+        } )
+
+        # Try to save
+        d.to_hdf5( savefile )
+
+        # Compare
+        f = h5py.File( savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    f[str(key)][inner_key][...],
+                )
+
+        # Delete spurious files
+        if os.path.isfile( savefile ):
+            os.remove( savefile )
 
 ########################################################################
 ########################################################################

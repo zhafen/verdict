@@ -9,6 +9,7 @@
 import collections
 import h5py
 import numpy as np
+import os
 
 ########################################################################
 ########################################################################
@@ -394,17 +395,6 @@ class Dict( collections.Mapping ):
 
         return self.apply( np.log10 )
 
-    def array( self ):
-        '''Returns a np.ndarray with unique order (sorted keys )'''
-
-        values = [ x for _,x in sorted(zip( self.keys(), self.values() ) )]
-
-        return np.array( values )
-
-    def to_df( self ):
-        '''Convert to a DataFrame, if possible.
-        '''
-
     def remove_empty_items( self ):
         '''Look for empty items and delete them.'''
 
@@ -415,6 +405,72 @@ class Dict( collections.Mapping ):
 
         for key in keys_to_delete:
             del self._storage[key]
+
+    ########################################################################
+    # Changing to other formats
+    ########################################################################
+
+    def array( self ):
+        '''Returns a np.ndarray with unique order (sorted keys )'''
+
+        values = [ x for _,x in sorted(zip( self.keys(), self.values() ) )]
+
+        return np.array( values )
+
+    ########################################################################
+
+    def to_hdf5( self, filepath, overwrite_existing_file=True ):
+        '''Save the contents as a .hdf5 file.
+
+        Args:
+            filepath (str):
+                Location to save the hdf5 file at.
+
+            overwrite_existing_file (boolean):
+                If True and a file already exists at filepath, delete it prior
+                to saving.
+        '''
+
+        if overwrite_existing_file:
+            if os.path.isfile( filepath ):
+                os.remove( filepath )
+
+        f = h5py.File( filepath, 'w-' )
+
+        def recursive_save( current_path, key, item ):
+            '''Function for recursively saving to an hdf5 file.
+
+            Args:
+                current_path (str):
+                    Current location in the hdf5 file.
+
+                key (str):
+                    Key to save.
+
+                item:
+                    Item to save.
+            '''
+
+            # Update path
+            current_path = '{}/{}'.format( current_path, key ) 
+
+            if isinstance( item, Dict ):
+                # Make space for the data set
+                f.create_group( current_path )
+
+                # Recurse
+                for inner_key, inner_item in item.items():
+                    recursive_save( current_path, inner_key, inner_item )
+
+            # Save data if the inner item isn't a Dict
+            else:
+                f.create_dataset( current_path, data=item )
+
+        # Actual save
+        for key, item in self.items():
+            recursive_save( '', key, item )
+
+        f.close()
 
     ########################################################################
     # Construction Methods
