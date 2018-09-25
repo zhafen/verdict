@@ -567,7 +567,7 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
-    def test_to_hdf5_pandas_inner( self ):
+    def test_to_hdf5_condensed( self ):
 
         savefile = 'to_hdf5_test.hdf5'
 
@@ -615,10 +615,16 @@ class TestVerDict( unittest.TestCase ):
         f = h5py.File( savefile, 'r' )
         for key, item in expected.items():
             for inner_key, inner_item in item.items():
-                npt.assert_allclose(
-                    inner_item,
-                    f[key][inner_key][...],
-                )
+                try:
+                    npt.assert_allclose(
+                        inner_item,
+                        f[key][inner_key][...],
+                    )
+                except TypeError:
+                    assert len( np.setdiff1d(
+                        inner_item,
+                        f[key][inner_key][...],
+                    ) ) == 0
 
         # Delete spurious files
         if os.path.isfile( savefile ):

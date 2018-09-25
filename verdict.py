@@ -470,7 +470,12 @@ class Dict( collections.Mapping ):
 
     ########################################################################
 
-    def to_hdf5( self, filepath, overwrite_existing_file=True ):
+    def to_hdf5(
+        self,
+        filepath,
+        overwrite_existing_file = True,
+        condensed = False
+    ):
         '''Save the contents as a .hdf5 file.
 
         Args:
@@ -480,6 +485,10 @@ class Dict( collections.Mapping ):
             overwrite_existing_file (boolean):
                 If True and a file already exists at filepath, delete it prior
                 to saving.
+
+            condensed (boolean):
+                If True, combine the innermost dictionaries into a condensed
+                DataFrame/array-like format.
         '''
 
         if overwrite_existing_file:
@@ -506,12 +515,30 @@ class Dict( collections.Mapping ):
             current_path = '{}/{}'.format( current_path, key ) 
 
             if isinstance( item, Dict ):
+
                 # Make space for the data set
                 f.create_group( current_path )
 
-                # Recurse
-                for inner_key, inner_item in item.items():
-                    recursive_save( current_path, inner_key, inner_item )
+                # Save in condensed format
+                if condensed and item.depth() == 2:
+                    df = item.to_df()
+
+                    recursive_save(
+                        current_path,
+                        df.index.name,
+                        df.index.values.astype( str )
+                    )
+                    for c_name in df.columns:
+                        recursive_save(
+                            current_path,
+                            c_name,
+                            df[c_name].values,
+                        )
+                                        
+                else:
+                    # Recurse
+                    for inner_key, inner_item in item.items():
+                        recursive_save( current_path, inner_key, inner_item )
 
             # Save data if the inner item isn't a Dict
             else:
