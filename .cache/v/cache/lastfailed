@@ -1,1 +1,3 @@
-{}
+{
+  "test_verdict.py::TestVerDict::test_to_hdf5_pandas_inner": true
+}

@@ -565,6 +565,65 @@ class TestVerDict( unittest.TestCase ):
         if os.path.isfile( savefile ):
             os.remove( savefile )
 
+    ########################################################################
+
+    def test_to_hdf5_pandas_inner( self ):
+
+        savefile = 'to_hdf5_test.hdf5'
+
+        # Test data
+        d = verdict.Dict( {
+            'i' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': 1.,
+                    'b': 3.,
+                } ),
+                2 : verdict.Dict( {
+                    'a': 5.,
+                    'b': 7.,
+                } ),
+            } ),
+            'ii' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': 10.,
+                    'b': 30.,
+                } ),
+                2 : verdict.Dict( {
+                    'a': 50.,
+                    'b': 70.,
+                } ),
+            } ),
+        } )
+
+        # Try to save
+        d.to_hdf5( savefile, condensed=True )
+
+        expected = {
+            'i': {
+                'name': np.array([ 'a', 'b' ]),
+                '1': np.array([ 1., 3., ]),
+                '2': np.array([ 5., 7., ]),
+            },
+            'ii': {
+                'name': np.array([ 'a', 'b' ]),
+                '1': np.array([ 10., 30., ]),
+                '2': np.array([ 50., 70., ]),
+            },
+        }
+
+        # Compare
+        f = h5py.File( savefile, 'r' )
+        for key, item in expected.items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    f[key][inner_key][...],
+                )
+
+        # Delete spurious files
+        if os.path.isfile( savefile ):
+            os.remove( savefile )
+
 ########################################################################
 ########################################################################
 
