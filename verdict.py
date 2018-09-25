@@ -553,13 +553,31 @@ class Dict( collections.Mapping ):
     ########################################################################
 
     @classmethod
-    def from_hdf5( cls, filepath ):
-        '''Load a HDF5 file as a verdict Dict
+    def from_hdf5( cls, filepath, unpack=False ):
+        '''Load a HDF5 file as a verdict Dict.
+
+        Args:
+            filepath (str):
+                Location to load the hdf5 file from.
+
+            unpack (boolean):
+                If True and the inner-most groups are combined into a condensed
+                DataFrame/array-like format, unpack them into a traditional
+                structure.
         '''
 
         f = h5py.File( filepath, 'r' )
 
         def recursive_retrieve( current_path, key ):
+            '''Function for recursively loading from an hdf5 file.
+
+            Args:
+                current_path (str):
+                    Current location in the hdf5 file.
+
+                key (str):
+                    Key to load.
+            '''
 
             # Update path
             current_path = '{}/{}'.format( current_path, key ) 
@@ -569,12 +587,31 @@ class Dict( collections.Mapping ):
             if isinstance( item, h5py.Group ):
 
                 group = f[current_path]
-
                 result = {}
-                for i_key in group.keys():
-                    result[i_key] = recursive_retrieve( current_path, i_key )
 
-                return Dict( result )
+                # Sometimes the data is saved in a condensed, DataFrame-like,
+                # format. But when we load it we may want it back in the
+                # usual format.
+                if unpack and 'name' in group.keys():
+                    for i_key in group.keys():
+
+                        if i_key == 'name':
+                            continue
+                    
+                        i_result = {}
+                        ii_items = zip( group['name'][...], group[i_key][...] )
+                        for ii_key, ii_item in ii_items:
+                            i_result[ii_key] = ii_item
+
+                        result[i_key] = Dict( i_result )
+
+                    return Dict( result )
+
+                else:
+                    for i_key in group.keys():
+                        result[i_key] = recursive_retrieve( current_path, i_key )
+
+                    return Dict( result )
 
             elif isinstance( item, h5py.Dataset ):
                 return np.array( item[...] )

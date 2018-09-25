@@ -655,6 +655,47 @@ class TestVerDictHDF5( unittest.TestCase ):
                     f[str(key)][inner_key][...],
                 )
 
+    ########################################################################
+
+    def test_from_hdf5_condensed( self ):
+
+        # Create test data
+        expected = verdict.Dict( {
+            'i' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': 1.,
+                    'b': 3.,
+                } ),
+                2 : verdict.Dict( {
+                    'a': 5.,
+                    'b': 7.,
+                } ),
+            } ),
+            'ii' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': 10.,
+                    'b': 30.,
+                } ),
+                2 : verdict.Dict( {
+                    'a': 50.,
+                    'b': 70.,
+                } ),
+            } ),
+        } )
+        expected.to_hdf5( self.savefile, condensed=True )
+
+        # Try to load
+        actual = verdict.Dict.from_hdf5( self.savefile, unpack=True )
+
+        # Compare
+        for key, item in expected.items():
+            for inner_key, inner_item in item.items():
+                for ii_key, ii_item in inner_item.items():
+                    npt.assert_allclose(
+                        ii_item,
+                        actual[key][str(inner_key)][ii_key],
+                    )
+
 ########################################################################
 ########################################################################
 
