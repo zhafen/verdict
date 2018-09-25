@@ -438,27 +438,35 @@ class Dict( collections.Mapping ):
     ########################################################################
 
     def to_df( self ):
-        '''Convert to a pandas DataFrame.
+        '''Join the innermost Dict classes into a pandas
+        DataFrame, where the keys in the innermost dictionaries are the index
+        and the keys for the innermost dictionaries are the column headers.
         '''
 
+        right_depth = self.depth() == 2
 
-        #DEBUG
-        import pdb; pdb.set_trace()
+        if right_depth:
+            dfs = []
+            for key, item in self.items():
 
-        dfs = []
-        for key, item in self.items():
+                # Make the dataframe for each dictionary
+                data = {
+                    'name': item.keys(),
+                    key: item.values(),
+                }
+                df = pd.DataFrame( data )
+                df.set_index( 'name', inplace=True )
 
-            data = {
-                'name': item.keys(),
-                key: item.values(),
-            }
+                dfs.append( df )
 
-            df = pd.DataFrame( data )
-            df.set_index( 'name', inplace=True )
+            return pd.concat( dfs, axis=1 )
 
-            dfs.append( df )
+        else:
+            result = {}
+            for key, item in self.items():
+                result[key] = item.to_df()
 
-        return pd.concat( dfs, axis=1 )
+            return result
 
     ########################################################################
 

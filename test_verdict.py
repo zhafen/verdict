@@ -162,7 +162,6 @@ class TestVerDict( unittest.TestCase ):
 
         assert d.depth() == 4
 
-
     ########################################################################
 
     def test_call_custom_kwargs( self ):
@@ -446,12 +445,9 @@ class TestVerDict( unittest.TestCase ):
 
         actual = d.to_df()
 
-        #DEBUG
-        import pdb; pdb.set_trace()
-
         for key, item in expected.items():
             for i_key, i_item in item.items():
-                assert i_item.equals( actual )
+                assert i_item.equals( actual[key][i_key] )
 
     ########################################################################
 
