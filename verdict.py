@@ -41,6 +41,23 @@ class Dict( collections.Mapping ):
     def __len__( self ):
         return len( self._storage )
 
+    def depth( self, level=1 ):
+        '''Depth of the Dict.
+
+        Args:
+            level (int):
+                A level of N means this Dict is contained in N-1 other Dict.
+        '''
+
+        depths = []
+        for item in self.values():
+            if hasattr( item, 'depth' ):
+                depths.append( item.depth( level+1 ) )
+            else:
+                return level
+
+        return max( depths )
+
     def __getitem__( self, item ):
         return self._storage[item]
 
@@ -423,6 +440,10 @@ class Dict( collections.Mapping ):
     def to_df( self ):
         '''Convert to a pandas DataFrame.
         '''
+
+
+        #DEBUG
+        import pdb; pdb.set_trace()
 
         dfs = []
         for key, item in self.items():

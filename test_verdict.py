@@ -109,6 +109,62 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
+    def test_depth( self ):
+        '''Depth of the Dict.
+        '''
+
+        d = verdict.Dict( {
+            'A' : verdict.Dict( {
+                'i' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 1.,
+                        'b': 3.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 5.,
+                        'b': 7.,
+                    } ),
+                } ),
+                'ii' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 10.,
+                        'b': 30.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 50.,
+                        'b': 70.,
+                    } ),
+                } ),
+            } ),
+            'B' : verdict.Dict( {
+                'i' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 2.,
+                        'b': 4.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 6.,
+                        'b': 8.,
+                    } ),
+                } ),
+                'ii' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 11.,
+                        'b': 31.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 51.,
+                        'b': 71.,
+                    } ),
+                } ),
+            } ),
+        } )
+
+        assert d.depth() == 4
+
+
+    ########################################################################
+
     def test_call_custom_kwargs( self ):
 
         class TestClassA( object ):
@@ -300,9 +356,6 @@ class TestVerDict( unittest.TestCase ):
     ########################################################################
 
     def test_to_df( self ):
-        '''Convert to a pandas DataFrame. This is desirable, but not high
-        priority, so I'll leave this test out for now.
-        '''
 
         d = verdict.Dict( {
             1 : verdict.Dict( {
@@ -325,6 +378,115 @@ class TestVerDict( unittest.TestCase ):
         actual = d.to_df()
 
         assert actual.equals( expected )
+
+    ########################################################################
+
+    def test_to_df_nested( self ):
+        '''Test that converting to a DF for nested Dicts only converts the
+        innermost.
+        '''
+
+        d = verdict.Dict( {
+            'A' : verdict.Dict( {
+                'i' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 1.,
+                        'b': 3.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 5.,
+                        'b': 7.,
+                    } ),
+                } ),
+                'ii' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 10.,
+                        'b': 30.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 50.,
+                        'b': 70.,
+                    } ),
+                } ),
+            } ),
+            'B' : verdict.Dict( {
+                'i' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 2.,
+                        'b': 4.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 6.,
+                        'b': 8.,
+                    } ),
+                } ),
+                'ii' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 11.,
+                        'b': 31.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 51.,
+                        'b': 71.,
+                    } ),
+                } ),
+            } ),
+        } )
+
+        expected = verdict.Dict( {
+            'A' : verdict.Dict( {
+                'i' : d['A']['i'].to_df(),
+                'ii' : d['A']['ii'].to_df(),
+            } ),
+            'B' : verdict.Dict( {
+                'i' : d['B']['i'].to_df(),
+                'ii' : d['B']['ii'].to_df(),
+            } ),
+        } )
+
+        actual = d.to_df()
+
+        #DEBUG
+        import pdb; pdb.set_trace()
+
+        for key, item in expected.items():
+            for i_key, i_item in item.items():
+                assert i_item.equals( actual )
+
+    ########################################################################
+
+    def test_to_hdf5( self ):
+
+        savefile = 'to_hdf5_test.hdf5'
+
+        # Test data
+        d = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': np.array([ 1., 2. ]),
+                'b': np.array([ 3., 4. ]),
+            } ),
+            2 : verdict.Dict( {
+                'a': np.array([ 5., 6. ]),
+                'b': np.array([ 7., 8. ]),
+            } ),
+        } )
+
+        # Try to save
+        d.to_hdf5( savefile )
+
+        # Compare
+        f = h5py.File( savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    f[str(key)][inner_key][...],
+                )
+
+        actual = d.to_df()
+
+        for key, item in expected.items():
+            assert actual.equals( expected )
 
     ########################################################################
 
