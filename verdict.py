@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-'''General utilities
+'''Version of Python dictionary with extended functionality.
 
 @author: Zach Hafen
 @contact: zachary.h.hafen@gmail.com
@@ -34,6 +34,11 @@ class Dict( collections.Mapping ):
 
     def __init__( self, *args, **kwargs ):
         self._storage = dict( *args, **kwargs )
+
+        # Convert contained dicts to Dicts
+        for key, item in self.items():
+            if isinstance( item, dict ):
+               self._storage[key] = Dict( item )
 
     def __iter__( self ):
         return iter( self._storage )

@@ -20,10 +20,76 @@ class TestVerDictStartup( unittest.TestCase ):
 
         d = { 'a' : 1, 'b' : 2 }
 
-        smart_dict = verdict.Dict( d )
+        verdict_dict = verdict.Dict( d )
 
-        self.assertEqual( smart_dict['b'], 2 )
-        self.assertEqual( len( smart_dict ), 2 )
+        self.assertEqual( verdict_dict['b'], 2 )
+        self.assertEqual( len( verdict_dict ), 2 )
+
+    ########################################################################
+
+    def test_nested( self ):
+
+        orig = {
+            'A' : {
+                'i' : {
+                    1 : {
+                        'a': 1.,
+                        'b': 3.,
+                    },
+                    2 : {
+                        'a': 5.,
+                        'b': 7.,
+                    },
+                },
+                'ii' : {
+                    1 : {
+                        'a': 10.,
+                        'b': 30.,
+                    },
+                    2 : {
+                        'a': 50.,
+                        'b': 70.,
+                    },
+                },
+            },
+            'B' : {
+                'i' : {
+                    1 : {
+                        'a': 2.,
+                        'b': 4.,
+                    },
+                    2 : {
+                        'a': 6.,
+                        'b': 8.,
+                    },
+                },
+                'ii' : {
+                    1 : {
+                        'a': 11.,
+                        'b': 31.,
+                    },
+                    2 : {
+                        'a': 51.,
+                        'b': 71.,
+                    },
+                },
+            },
+        }
+
+        d = verdict.Dict( orig )
+
+        for key, item in d.items():
+            assert isinstance( item, verdict.Dict )
+            for i_key, i_item in item.items():
+                    assert isinstance( i_item, verdict.Dict )
+                    for ii_key, ii_item in i_item.items():
+                        assert isinstance( i_item, verdict.Dict )
+                        for iii_key, iii_item in ii_item.items():
+                            self.assertEqual(
+                                orig[key][i_key][ii_key][iii_key],
+                                d[key][i_key][ii_key][iii_key],
+                            )
+        
 
     ########################################################################
 
@@ -207,7 +273,7 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
-    def test_multiply_smart_dict( self ):
+    def test_multiply_verdict_dict( self ):
 
         d1 = verdict.Dict( { 1 : 1, 2 : 2 } )
         d2 = verdict.Dict( { 1 : 2, 2 : 3 } )
@@ -236,7 +302,7 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
-    def test_divide_smart_dict( self ):
+    def test_divide_verdict_dict( self ):
 
         d1 = verdict.Dict( { 1 : 9, 2 : 4 } )
         d2 = verdict.Dict( { 1 : 3, 2 : 2 } )
@@ -262,7 +328,7 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
-    def test_add_smart_dict( self ):
+    def test_add_verdict_dict( self ):
 
         d1 = verdict.Dict( { 1 : 9, 2 : 4 } )
         d2 = verdict.Dict( { 1 : 3, 2 : 2 } )
@@ -288,7 +354,7 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
-    def test_subtract_smart_dict( self ):
+    def test_subtract_verdict_dict( self ):
 
         d1 = verdict.Dict( { 1 : 9, 2 : 4 } )
         d2 = verdict.Dict( { 1 : 3, 2 : 2 } )
