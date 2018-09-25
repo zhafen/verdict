@@ -476,7 +476,7 @@ class Dict( collections.Mapping ):
         overwrite_existing_file = True,
         condensed = False
     ):
-        '''Save the contents as a .hdf5 file.
+        '''Save the contents as a HDF5 file.
 
         Args:
             filepath (str):
@@ -551,7 +551,40 @@ class Dict( collections.Mapping ):
         f.close()
 
     ########################################################################
-    # Construction Methods
+
+    @classmethod
+    def from_hdf5( cls, filepath ):
+        '''Load a HDF5 file as a verdict Dict
+        '''
+
+        f = h5py.File( filepath, 'r' )
+
+        def recursive_retrieve( current_path, key ):
+
+            # Update path
+            current_path = '{}/{}'.format( current_path, key ) 
+
+            item = f[current_path]
+        
+            if isinstance( item, h5py.Group ):
+
+                group = f[current_path]
+
+                result = {}
+                for i_key in group.keys():
+                    result[i_key] = recursive_retrieve( current_path, i_key )
+
+                return Dict( result )
+
+            elif isinstance( item, h5py.Dataset ):
+                return np.array( item[...] )
+
+        result = {}
+        for key in f.keys():
+            result[key] = recursive_retrieve( '', key )
+
+        return Dict( result )
+
     ########################################################################
 
     @classmethod

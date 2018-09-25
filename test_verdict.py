@@ -449,11 +449,23 @@ class TestVerDict( unittest.TestCase ):
             for i_key, i_item in item.items():
                 assert i_item.equals( actual[key][i_key] )
 
+########################################################################
+
+class TestVerDictHDF5( unittest.TestCase ):
+
+    def setUp( self ):
+
+        self.savefile = 'to_hdf5_test.hdf5'
+
+    def tearDown( self ):
+
+        # Delete spurious files
+        if os.path.isfile( self.savefile ):
+            os.remove( self.savefile )
+
     ########################################################################
 
     def test_to_hdf5( self ):
-
-        savefile = 'to_hdf5_test.hdf5'
 
         # Test data
         d = verdict.Dict( {
@@ -468,10 +480,10 @@ class TestVerDict( unittest.TestCase ):
         } )
 
         # Try to save
-        d.to_hdf5( savefile )
+        d.to_hdf5( self.savefile )
 
         # Compare
-        f = h5py.File( savefile, 'r' )
+        f = h5py.File( self.savefile, 'r' )
         for key, item in d.items():
             for inner_key, inner_item in item.items():
                 npt.assert_allclose(
@@ -488,8 +500,6 @@ class TestVerDict( unittest.TestCase ):
 
     def test_to_hdf5( self ):
 
-        savefile = 'to_hdf5_test.hdf5'
-
         # Test data
         d = verdict.Dict( {
             1 : verdict.Dict( {
@@ -503,10 +513,10 @@ class TestVerDict( unittest.TestCase ):
         } )
 
         # Try to save
-        d.to_hdf5( savefile )
+        d.to_hdf5( self.savefile )
 
         # Compare
-        f = h5py.File( savefile, 'r' )
+        f = h5py.File( self.savefile, 'r' )
         for key, item in d.items():
             for inner_key, inner_item in item.items():
                 npt.assert_allclose(
@@ -514,15 +524,9 @@ class TestVerDict( unittest.TestCase ):
                     f[str(key)][inner_key][...],
                 )
 
-        # Delete spurious files
-        if os.path.isfile( savefile ):
-            os.remove( savefile )
-
     ########################################################################
 
     def test_to_hdf5_additional_nesting( self ):
-
-        savefile = 'to_hdf5_test.hdf5'
 
         # Test data
         d = verdict.Dict( {
@@ -549,10 +553,10 @@ class TestVerDict( unittest.TestCase ):
         } )
 
         # Try to save
-        d.to_hdf5( savefile )
+        d.to_hdf5( self.savefile )
 
         # Compare
-        f = h5py.File( savefile, 'r' )
+        f = h5py.File( self.savefile, 'r' )
         for key, item in d.items():
             for inner_key, inner_item in item.items():
                 for ii_key, ii_item in inner_item.items():
@@ -560,10 +564,6 @@ class TestVerDict( unittest.TestCase ):
                         ii_item,
                         f[key][str(inner_key)][ii_key][...],
                     )
-
-        # Delete spurious files
-        if os.path.isfile( savefile ):
-            os.remove( savefile )
 
     ########################################################################
 
@@ -596,7 +596,7 @@ class TestVerDict( unittest.TestCase ):
         } )
 
         # Try to save
-        d.to_hdf5( savefile, condensed=True )
+        d.to_hdf5( self.savefile, condensed=True )
 
         expected = {
             'i': {
@@ -612,7 +612,7 @@ class TestVerDict( unittest.TestCase ):
         }
 
         # Compare
-        f = h5py.File( savefile, 'r' )
+        f = h5py.File( self.savefile, 'r' )
         for key, item in expected.items():
             for inner_key, inner_item in item.items():
                 try:
@@ -626,9 +626,34 @@ class TestVerDict( unittest.TestCase ):
                         f[key][inner_key][...],
                     ) ) == 0
 
-        # Delete spurious files
-        if os.path.isfile( savefile ):
-            os.remove( savefile )
+    ########################################################################
+
+    def test_from_hdf5( self ):
+
+        # Create test data
+        expected = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': np.array([ 1., 2. ]),
+                'b': np.array([ 3., 4. ]),
+            } ),
+            2 : verdict.Dict( {
+                'a': np.array([ 5., 6. ]),
+                'b': np.array([ 7., 8. ]),
+            } ),
+        } )
+        expected.to_hdf5( self.savefile )
+
+        # Try to load
+        actual = verdict.Dict.from_hdf5( self.savefile )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in actual.items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    f[str(key)][inner_key][...],
+                )
 
 ########################################################################
 ########################################################################
