@@ -678,10 +678,14 @@ class TestVerDictHDF5( unittest.TestCase ):
                 'b': np.array([ 7., 8. ]),
             } ),
         } )
-        expected.to_hdf5( self.savefile )
+        attrs = { 'x': 1.5 }
+        expected.to_hdf5( self.savefile, attributes=attrs )
 
         # Try to load
-        actual = verdict.Dict.from_hdf5( self.savefile )
+        actual, actual_attrs = verdict.Dict.from_hdf5(
+            self.savefile,
+            load_attributes = True,
+        )
 
         # Compare
         f = h5py.File( self.savefile, 'r' )
@@ -691,6 +695,9 @@ class TestVerDictHDF5( unittest.TestCase ):
                     inner_item,
                     f[str(key)][inner_key][...],
                 )
+
+        # Compare attributes
+        self.assertEqual( attrs, actual_attrs )
 
     ########################################################################
 

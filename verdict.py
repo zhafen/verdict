@@ -568,12 +568,16 @@ class Dict( collections.Mapping ):
     ########################################################################
 
     @classmethod
-    def from_hdf5( cls, filepath, unpack=False ):
+    def from_hdf5( cls, filepath, load_attributes=True, unpack=False ):
         '''Load a HDF5 file as a verdict Dict.
 
         Args:
             filepath (str):
                 Location to load the hdf5 file from.
+
+            load_attributes (boolean):
+                If True, load attributes stored in the hdf5 file's .attrs keys
+                and return as a separate dictionary.
 
             unpack (boolean):
                 If True and the inner-most groups are combined into a condensed
@@ -635,7 +639,16 @@ class Dict( collections.Mapping ):
         for key in f.keys():
             result[key] = recursive_retrieve( '', key )
 
-        return Dict( result )
+        result = Dict( result )
+
+        # Load (or don't) attributes and return
+        if load_attributes and len( f.attrs.keys() ) > 0:
+            attrs = {}
+            for key in f.attrs.keys():
+                attrs[key] = f.attrs[key]
+            return result, attrs
+        else:
+            return result
 
     ########################################################################
 
