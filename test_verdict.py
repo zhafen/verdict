@@ -544,9 +544,10 @@ class TestVerDictHDF5( unittest.TestCase ):
                 'b': np.array([ 7., 8. ]),
             } ),
         } )
+        attrs = { 'x' : 1.5, }
 
         # Try to save
-        d.to_hdf5( self.savefile )
+        d.to_hdf5( self.savefile, attributes=attrs )
 
         # Compare
         f = h5py.File( self.savefile, 'r' )
@@ -557,38 +558,8 @@ class TestVerDictHDF5( unittest.TestCase ):
                     f[str(key)][inner_key][...],
                 )
 
-        actual = d.to_df()
-
-        for key, item in expected.items():
-            assert actual.equals( expected )
-
-    ########################################################################
-
-    def test_to_hdf5( self ):
-
-        # Test data
-        d = verdict.Dict( {
-            1 : verdict.Dict( {
-                'a': np.array([ 1., 2. ]),
-                'b': np.array([ 3., 4. ]),
-            } ),
-            2 : verdict.Dict( {
-                'a': np.array([ 5., 6. ]),
-                'b': np.array([ 7., 8. ]),
-            } ),
-        } )
-
-        # Try to save
-        d.to_hdf5( self.savefile )
-
-        # Compare
-        f = h5py.File( self.savefile, 'r' )
-        for key, item in d.items():
-            for inner_key, inner_item in item.items():
-                npt.assert_allclose(
-                    inner_item,
-                    f[str(key)][inner_key][...],
-                )
+        # Make sure attributes save
+        npt.assert_allclose( f.attrs['x'], attrs['x'] )
 
     ########################################################################
 

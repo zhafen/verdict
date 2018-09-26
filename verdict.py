@@ -478,6 +478,7 @@ class Dict( collections.Mapping ):
     def to_hdf5(
         self,
         filepath,
+        attributes = None,
         overwrite_existing_file = True,
         condensed = False
     ):
@@ -486,6 +487,10 @@ class Dict( collections.Mapping ):
         Args:
             filepath (str):
                 Location to save the hdf5 file at.
+
+            attributes (dict):
+                Dictionary of attributes to store as attributes for the HDF5
+                file.
 
             overwrite_existing_file (boolean):
                 If True and a file already exists at filepath, delete it prior
@@ -501,6 +506,11 @@ class Dict( collections.Mapping ):
                 os.remove( filepath )
 
         f = h5py.File( filepath, 'w-' )
+
+        # Store attributes
+        if attributes is not None:
+            for key, item in attributes.items():
+                f.attrs[key] = item
 
         def recursive_save( current_path, key, item ):
             '''Function for recursively saving to an hdf5 file.
