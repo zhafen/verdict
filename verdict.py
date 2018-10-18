@@ -69,6 +69,9 @@ class Dict( collections.Mapping ):
     def __setitem__( self, key, item ):
         self._storage[key] = item
 
+    def __delitem__( self, key ):
+        del self._storage[key]
+
     def __repr__( self ):
 
         out_str = "Dict, {\n"
