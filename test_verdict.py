@@ -665,6 +665,47 @@ class TestVerDictHDF5( unittest.TestCase ):
 
     ########################################################################
 
+    def test_to_hdf5_condensed_shallow( self ):
+
+        savefile = 'to_hdf5_test.hdf5'
+
+        # Test data
+        d = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': 1.,
+                'b': 3.,
+            } ),
+            2 : verdict.Dict( {
+                'a': 5.,
+                'b': 7.,
+            } ),
+        } )
+
+        # Try to save
+        d.to_hdf5( self.savefile, condensed=True )
+
+        expected = {
+            'name': np.array([ 'a', 'b' ]),
+            '1': np.array([ 1., 3., ]),
+            '2': np.array([ 5., 7., ]),
+        }
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in expected.items():
+            try:
+                npt.assert_allclose(
+                    item,
+                    f[key][...],
+                )
+            except TypeError:
+                assert len( np.setdiff1d(
+                    item,
+                    f[key][...],
+                ) ) == 0
+
+    ########################################################################
+
     def test_from_hdf5( self ):
 
         # Create test data

@@ -562,9 +562,30 @@ class Dict( collections.Mapping ):
             else:
                 f.create_dataset( current_path, data=item )
 
+        # Shallow dictionary condensed edge case
+        shallow_condensed_save = ( self.depth() <= 2 ) and condensed
+
         # Actual save
-        for key, item in self.items():
-            recursive_save( '', key, item )
+        if not shallow_condensed_save:
+            for key, item in self.items():
+                recursive_save( '', key, item )
+
+        # For relatively shallow dictionaries
+        else:
+            df = self.to_df()
+
+            recursive_save(
+                '',
+                df.index.name,
+                df.index.values.astype( str )
+            )
+            for c_name in df.columns:
+                recursive_save(
+                    '',
+                    c_name,
+                    df[c_name].values,
+                )
+
 
         f.close()
 
