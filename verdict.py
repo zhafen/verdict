@@ -665,6 +665,24 @@ class Dict( collections.Mapping ):
 
         result = Dict( result )
 
+        # For shallow save files
+        if unpack and 'name' in result.keys():
+            true_result = {}
+            
+            for i_key in result.keys():
+
+                if i_key == 'name':
+                    continue
+            
+                i_result = {}
+                ii_items = zip( result['name'], result[i_key] )
+                for ii_key, ii_item in ii_items:
+                    i_result[ii_key] = ii_item
+
+                true_result[i_key] = Dict( i_result )
+
+            result = true_result
+
         # Load (or don't) attributes and return
         if load_attributes and len( f.attrs.keys() ) > 0:
             attrs = {}
