@@ -10,6 +10,7 @@ import h5py
 import numpy as np
 import os
 import pandas as pd
+import six
 
 try:
     import collections.abc as collections
@@ -613,7 +614,17 @@ class Dict( collections.Mapping ):
 
             # Save data if the inner item isn't a Dict
             else:
-                f.create_dataset( current_path, data=item )
+                try:
+                    f.create_dataset( current_path, data=item )
+                # Accounts for h5py not recognizing unicode. This is fixed
+                # in h5py 2.9.0, with PR #1032.
+                # The fix used here is exactly what the PR does.
+                except TypeError:
+                    data = np.array(
+                        item,
+                        dtype=h5py.special_dtype( vlen=six.text_type ),
+                    )
+                    f.create_dataset( current_path, data=data )
 
         # Shallow dictionary condensed edge case
         shallow_condensed_save = ( self.depth() <= 2 ) and condensed
