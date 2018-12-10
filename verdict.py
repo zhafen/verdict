@@ -512,8 +512,8 @@ class Dict( collections.Mapping ):
 
                 # Make the dataframe for each dictionary
                 data = {
-                    'name': item.keys(),
-                    key: item.values(),
+                    'name': list( item.keys() ),
+                    key: list( item.values() ),
                 }
                 df = pd.DataFrame( data )
                 df.set_index( 'name', inplace=True )
