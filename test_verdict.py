@@ -291,13 +291,13 @@ class TestVerDict( unittest.TestCase ):
     def test_divide( self ):
 
         d = verdict.Dict( { 1 : 2, 2 : 4 } )
-        expected = { 1 : 1, 2 : 2, }
+        expected = { 1 : 1.0, 2 : 2.0, }
         actual = d/2
         self.assertEqual( expected, actual )
 
         d = verdict.Dict( { 1 : 2, 2 : 4 } )
         expected = { 1 : 2, 2 : 1, }
-        actual = 4/d
+        actual = 4 // d
         self.assertEqual( expected, actual )
 
     ########################################################################

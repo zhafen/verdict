@@ -6,11 +6,15 @@
 @status: Development
 '''
 
-import collections
 import h5py
 import numpy as np
 import os
 import pandas as pd
+
+try:
+    import collections.abc as collections
+except ImportError:
+    import collections
 
 ########################################################################
 ########################################################################
@@ -27,9 +31,6 @@ class Dict( collections.Mapping ):
     for key in smart_dict.keys():
         results[key] = smart_dict[key].test_class_b.foo( 2 )
     return results
-
-    NOTE: In Python 3, the parent class probably needs
-    to be switched to collections.abc.Mapping.
     '''
 
     def __init__( self, *args, **kwargs ):
@@ -271,6 +272,32 @@ class Dict( collections.Mapping ):
 
         return Dict( results )
 
+    def __truediv__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key]/other[key]
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key]/other
+
+        return Dict( results )
+
+    def __floordiv__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key]//other[key]
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key]//other
+
+        return Dict( results )
+
     def __rdiv__( self, other ):
 
         results = {}
@@ -281,6 +308,32 @@ class Dict( collections.Mapping ):
         else:
             for key in self.keys():
                 results[key] = other/self._storage[key]
+
+        return Dict( results )
+
+    def __rtruediv__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = other[key]/self._storage[key]
+        else:
+            for key in self.keys():
+                results[key] = other/self._storage[key]
+
+        return Dict( results )
+
+    def __rfloordiv__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = other[key]//self._storage[key]
+        else:
+            for key in self.keys():
+                results[key] = other//self._storage[key]
 
         return Dict( results )
 
