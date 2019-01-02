@@ -491,11 +491,18 @@ class Dict( collections.Mapping ):
     ########################################################################
 
     def array( self ):
-        '''Returns a np.ndarray with unique order (sorted keys )'''
+        '''Returns a np.ndarray of values with unique order (sorted keys )'''
 
         values = [ x for _,x in sorted(zip( self.keys(), self.values() ) )]
 
         return np.array( values )
+
+    ########################################################################
+
+    def keys_array( self ):
+        '''Returns a np.ndarray of keys with unique order (sorted keys )'''
+
+        return np.array( sorted( self.keys() ) )
 
     ########################################################################
 
