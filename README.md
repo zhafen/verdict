@@ -9,4 +9,4 @@ Abbreviated feature list:
 * Easy access to contained objects' attributes, returned as another verdict.
 * Nested dictionaries can be transposed, i.e. the nesting order can be changed.
 * keymin and keymax, which find the extrema values in the dictionary and their keys.
-* Subdivision according to the keys or a provided dictionary
+* Subdivision according to the keys or a provided dictionary.
