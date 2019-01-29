@@ -1,0 +1,6 @@
+pandas==0.20.3
+mock==2.0.0
+numpy==1.15.4
+six==1.10.0
+setuptools==28.8.0
+h5py==2.7.0
