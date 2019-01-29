@@ -10,3 +10,6 @@ Abbreviated feature list:
 * Nested dictionaries can be transposed, i.e. the nesting order can be changed.
 * keymin and keymax, which find the extrema values in the dictionary and their keys.
 * Subdivision according to the keys or a provided dictionary.
+
+To install:
+`pip install verdict`
