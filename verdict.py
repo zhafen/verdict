@@ -358,6 +358,22 @@ class Dict( collections.Mapping ):
 
         return result
 
+    def median( self ):
+
+        return np.median( self.array() )
+
+    def nanmedian( self ):
+
+        return np.nanmedian( self.array() )
+
+    def percentile( self, q ):
+
+        return np.percentile( self.array(), q )
+
+    def nanpercentile( self, q ):
+
+        return np.nanpercentile( self.array(), q )
+
     def keymax( self ):
         
         for key, item in self.items():
