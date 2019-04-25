@@ -6,6 +6,7 @@
 @status: Development
 '''
 
+import copy
 import h5py
 import numpy as np
 import os
@@ -350,7 +351,7 @@ class Dict( collections.Mapping ):
             # To handle non-standard items
             # (e.g. things that aren't ints or floats )
             if i == 0:
-                result = self._storage[key]
+                result = copy.deepcopy( self._storage[key] )
 
             else:
                 result += self._storage[key]
