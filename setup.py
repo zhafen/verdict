@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="verdict",
-    version="1.0",
+    version="1.1.3",
     author="Zach Hafen",
     author_email="zachary.h.hafen@gmail.com",
     description="A version of Python's dictionary with additional features",
@@ -27,4 +27,5 @@ setuptools.setup(
         'setuptools>=28.8.0',
         'h5py>=2.7.0',
     ],
+    py_modules=[ 'verdict', 'test_verdict' ],
 )
