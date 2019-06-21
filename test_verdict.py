@@ -7,6 +7,7 @@ import numpy as np
 import numpy.testing as npt
 import os
 import pandas as pd
+import copy
 import unittest
 
 import verdict
@@ -840,3 +841,17 @@ class TestDictFromDefaultsAndVariations( unittest.TestCase ):
         for key in expected.keys():
             assert expected[key] == actual[key]
 
+########################################################################
+########################################################################
+
+class TestExternalCompatibility( unittest.TestCase ):
+
+    def test_deepcopy( self ):
+
+        # Setup
+        d = { 'a' : 1, 'b' : 2 }
+        ex = verdict.Dict( d )
+
+        ac = copy.deepcopy( ex )
+
+        assert ex == ac

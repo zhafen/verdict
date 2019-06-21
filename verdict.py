@@ -115,6 +115,14 @@ class Dict( collections.Mapping ):
 
         return Dict( results )
 
+    def __getstate__( self ):
+
+        return self.__dict__
+
+    def __setstate__(self, state ):
+
+        self.__dict__ = state
+
     def call_custom_kwargs( self, kwargs, default_kwargs={}, verbose=False ):
         '''Perform call, but using custom keyword arguments per dictionary tag.
 
