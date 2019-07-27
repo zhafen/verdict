@@ -594,6 +594,12 @@ class Dict( collections.Mapping ):
             if os.path.isfile( filepath ):
                 os.remove( filepath )
 
+        # Make sure the path exists
+        os.makedirs(
+            os.path.dirname( os.path.abspath( filepath ) ),
+            exist_ok = True
+        )
+
         f = h5py.File( filepath, 'w-' )
 
         # Store attributes
@@ -681,7 +687,6 @@ class Dict( collections.Mapping ):
                     c_name,
                     df[c_name].values,
                 )
-
 
         f.close()
 
