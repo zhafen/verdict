@@ -36,7 +36,9 @@ class Dict( collections.Mapping ):
     '''
 
     def __init__( self, *args, **kwargs ):
+
         self._storage = dict( *args, **kwargs )
+        self.unpack_name = 'name'
 
         # Convert contained dicts to Dicts
         for key, item in self.items():
@@ -545,11 +547,11 @@ class Dict( collections.Mapping ):
 
                 # Make the dataframe for each dictionary
                 data = {
-                    'name': list( item.keys() ),
+                    self.unpack_name: list( item.keys() ),
                     key: list( item.values() ),
                 }
                 df = pd.DataFrame( data )
-                df.set_index( 'name', inplace=True )
+                df.set_index( self.unpack_name, inplace=True )
 
                 dfs.append( df )
 
@@ -693,7 +695,13 @@ class Dict( collections.Mapping ):
     ########################################################################
 
     @classmethod
-    def from_hdf5( cls, filepath, load_attributes=True, unpack=False ):
+    def from_hdf5(
+        cls,
+        filepath,
+        load_attributes = True,
+        unpack = False,
+        unpack_name = 'name'
+    ):
         '''Load a HDF5 file as a verdict Dict.
 
         Args:
@@ -736,14 +744,14 @@ class Dict( collections.Mapping ):
                 # Sometimes the data is saved in a condensed, DataFrame-like,
                 # format. But when we load it we may want it back in the
                 # usual format.
-                if unpack and 'name' in group.keys():
+                if unpack and unpack_name in group.keys():
                     for i_key in group.keys():
 
-                        if i_key == 'name':
+                        if i_key == unpack_name:
                             continue
                     
                         i_result = {}
-                        ii_items = zip( group['name'][...], group[i_key][...] )
+                        ii_items = zip( group[unpack_name][...], group[i_key][...] )
                         for ii_key, ii_item in ii_items:
                             i_result[ii_key] = ii_item
 
@@ -765,18 +773,19 @@ class Dict( collections.Mapping ):
             result[key] = recursive_retrieve( '', key )
 
         result = Dict( result )
+        result.unpack_name = unpack_name
 
         # For shallow save files
-        if unpack and 'name' in result.keys():
+        if unpack and unpack_name in result.keys():
             true_result = {}
             
             for i_key in result.keys():
 
-                if i_key == 'name':
+                if i_key == unpack_name:
                     continue
             
                 i_result = {}
-                ii_items = zip( result['name'], result[i_key] )
+                ii_items = zip( result[unpack_name], result[i_key] )
                 for ii_key, ii_item in ii_items:
                     i_result[ii_key] = ii_item
 
