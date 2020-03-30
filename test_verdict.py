@@ -810,6 +810,53 @@ class TestVerDictHDF5( unittest.TestCase ):
                     actual[str(key)][inner_key],
                 )
 
+    ########################################################################
+
+    def test_from_hdf5_one_entry_dict( self ):
+
+        # Test data
+        base_arr = np.array([
+            [
+                [ 1., 2., ],
+                [ 3., 4., ],
+            ],
+            [
+                [ 5., 6., ],
+                [ 7., 8., ],
+            ],
+        ])
+        d = verdict.Dict( {
+            'A' : {
+                '1' : {
+                    'a': base_arr,
+                    'b': 2. * base_arr,
+                },
+                '2' : {
+                    'c': 3. * base_arr,
+                    'd': 4. * base_arr,
+                },
+            }
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5( self.savefile, attributes=attrs )
+
+        # Try to load
+        actual, attrs = verdict.Dict.from_hdf5( self.savefile, )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in d['A'].items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    actual['A'][str(key)][inner_key][...],
+                )
+
+        # Make sure attributes save
+        npt.assert_allclose( f.attrs['x'], attrs['x'] )
+
 ########################################################################
 ########################################################################
 
