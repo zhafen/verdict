@@ -590,6 +590,9 @@ class Dict( collections.Mapping ):
                 DataFrame/array-like format.
         '''
 
+        # Make sure all contained dictionaries are verdict Dicts
+        self = Dict( self )
+
         if overwrite_existing_file:
             if os.path.isfile( filepath ):
                 os.remove( filepath )
