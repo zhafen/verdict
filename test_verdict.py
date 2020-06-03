@@ -90,7 +90,7 @@ class TestVerDictStartup( unittest.TestCase ):
                                 orig[key][i_key][ii_key][iii_key],
                                 d[key][i_key][ii_key][iii_key],
                             )
-        
+
 
     ########################################################################
 
@@ -230,6 +230,18 @@ class TestVerDict( unittest.TestCase ):
         assert d.depth() == 4
 
     ########################################################################
+
+    def test_getitem_split( self ):
+
+        d = verdict.Dict({
+            'a/b': 1,
+            'a' : { 'c': 2 },
+            'b' : { 'c': { 'd': 3 } },
+        })
+
+        assert d['a/b'] == 1
+        assert d['a/c'] == 2
+        assert d['b/c/d'] == 3
 
     def test_call_custom_kwargs( self ):
 

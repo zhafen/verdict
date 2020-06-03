@@ -69,7 +69,17 @@ class Dict( collections.Mapping ):
         return max( depths )
 
     def __getitem__( self, item ):
-        return self._storage[item]
+        try:
+            return self._storage[item]
+        # Allow accessing a given depth using '/'
+        except KeyError:
+
+            keys = item.split( '/' )
+            result = self._storage[keys[0]]
+            for key in keys[1:]:
+                result = result[key]
+
+            return result
 
     def __setitem__( self, key, item ):
         self._storage[key] = item
@@ -385,7 +395,7 @@ class Dict( collections.Mapping ):
         return np.nanpercentile( self.array(), q )
 
     def keymax( self ):
-        
+
         for key, item in self.items():
             try:
                 if item_max < item:
@@ -398,7 +408,7 @@ class Dict( collections.Mapping ):
         return key_max, item_max
 
     def keymin( self ):
-        
+
         for key, item in self.items():
             try:
                 if item_min > item:
@@ -448,7 +458,7 @@ class Dict( collections.Mapping ):
             if str_to_match is not None:
                 str_matches = key_slice == str_to_match
                 results[str_matches][key] = item
-            
+
             else:
                 try:
                     results[key_slice][key] = item
@@ -471,7 +481,7 @@ class Dict( collections.Mapping ):
         '''
 
         results = {}
-    
+
         for key, item in self.items():
 
             try:
@@ -487,7 +497,7 @@ class Dict( collections.Mapping ):
                 except KeyError:
                     results['no label'] = Dict( {} )
                     results['no label'][key] = item
-        
+
         if not return_list:
             return results
 
@@ -627,7 +637,7 @@ class Dict( collections.Mapping ):
             '''
 
             # Update path
-            current_path = '{}/{}'.format( current_path, key ) 
+            current_path = '{}/{}'.format( current_path, key )
 
             if isinstance( item, Dict ):
 
@@ -649,7 +659,7 @@ class Dict( collections.Mapping ):
                             c_name,
                             df[c_name].values,
                         )
-                                        
+
                 else:
                     # Recurse
                     for inner_key, inner_item in item.items():
@@ -735,10 +745,10 @@ class Dict( collections.Mapping ):
             '''
 
             # Update path
-            current_path = '{}/{}'.format( current_path, key ) 
+            current_path = '{}/{}'.format( current_path, key )
 
             item = f[current_path]
-        
+
             if isinstance( item, h5py.Group ):
 
                 group = f[current_path]
@@ -752,7 +762,7 @@ class Dict( collections.Mapping ):
 
                         if i_key == unpack_name:
                             continue
-                    
+
                         i_result = {}
                         ii_items = zip( group[unpack_name][...], group[i_key][...] )
                         for ii_key, ii_item in ii_items:
@@ -781,12 +791,12 @@ class Dict( collections.Mapping ):
         # For shallow save files
         if unpack and unpack_name in result.keys():
             true_result = {}
-            
+
             for i_key in result.keys():
 
                 if i_key == unpack_name:
                     continue
-            
+
                 i_result = {}
                 ii_items = zip( result[unpack_name], result[i_key] )
                 for ii_key, ii_item in ii_items:
