@@ -719,6 +719,37 @@ class TestVerDictHDF5( unittest.TestCase ):
 
     ########################################################################
 
+    def test_to_hdf5_single_arr_exception( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            1 : {
+                'a': np.array([ 1., 2. ]),
+                'b': np.array([ 3., 4. ]),
+            },
+        } )
+        d['c'] = {
+            'a': np.array([ 5., 6. ]),
+        }
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5( self.savefile, attributes=attrs )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    f[str(key)][inner_key][...],
+                )
+
+        # Make sure attributes save
+        npt.assert_allclose( f.attrs['x'], attrs['x'] )
+
+    ########################################################################
+
     def test_from_hdf5( self ):
 
         # Create test data

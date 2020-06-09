@@ -639,6 +639,10 @@ class Dict( collections.Mapping ):
             # Update path
             current_path = '{}/{}'.format( current_path, key )
 
+            # Convert missed dictionaries into verdict versions
+            if isinstance( item, dict ):
+                item = Dict( item )
+
             if isinstance( item, Dict ):
 
                 # Make space for the data set
