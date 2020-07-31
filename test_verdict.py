@@ -750,6 +750,104 @@ class TestVerDictHDF5( unittest.TestCase ):
 
     ########################################################################
 
+    def test_to_hdf5_uneven_lists( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            1 : {
+                'a': [
+                    np.array([ 1, 2, ]),
+                    np.array([ 1, 2, 3, 4 ]),
+                ],
+                'b': [
+                    np.array([ 'a', 'b', ]),
+                    np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                ],
+                'c': [
+                    [
+                        np.array([ 'a', 'b', ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                    ],
+                    [
+                        np.array([ 1, 2, ]),
+                        np.array([ 1, 2, 3, 4 ]),
+                    ],
+                ],
+            },
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5( self.savefile, attributes=attrs )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                if inner_key != 'c':
+                    for i, v in enumerate( inner_item ):
+                        ukey = 'uneven{}'.format( i )
+                        for j, v_j in enumerate( v ):
+                            assert v_j == f[str(key)][inner_key][ukey][...][j]
+                else:
+                    for i, v in enumerate( inner_item ):
+                        ukey = 'uneven{}'.format( i )
+                        for j, v_j in enumerate( v ):
+                            ukey_j = 'uneven{}'.format( j )
+                            for k, v_k in enumerate( v_j ):
+                                assert v_k == f[str(key)][inner_key][ukey][ukey_j][...][k]
+
+        ########################################################################
+
+        def test_to_hdf5_string_and_tuple_array( self ):
+
+            # Test data
+            d = verdict.Dict( {
+                1 : {
+                    'a': np.array([ ( 'aa', 'bb' ), ( 'cc', 'dd' ) ]),
+                    'b': np.array([ ( 'a', 'b' ), ( 'c', 'd' ) ]),
+                    'c': 'abcdefg',
+                    'd': [
+                        np.array([ ( 'a', 'b' ), ]),
+                        np.array([ ( 'aa', 'bb' ), ( 'cc', 'dd' ) ]),
+                    ],
+                },
+            } )
+            attrs = { 'x' : 1.5, }
+
+            # Try to save
+            d.to_hdf5( self.savefile, attributes=attrs )
+
+            # Compare
+            f = h5py.File( self.savefile, 'r' )
+            for key, item in d.items():
+                for inner_key, inner_item in item.items():
+                    if inner_key in [ 'a', 'b' ]:
+                        for i, arr in enumerate( inner_item ):
+                            for j, v in enumerate( arr ):
+                                try:
+                                    assert v == f[str(key)][inner_key][...][i][j]
+                                except:
+                                    #DEBUG
+                                    import pdb; pdb.set_trace()
+                    elif inner_key in [ 'd', ]:
+                        for i, arr in enumerate( inner_item ):
+                            for j, line in enumerate( arr ):
+                                for k, v in enumerate( line ):
+                                    try:
+                                        assert v == f[str(key)][inner_key][...][i][j][k]
+                                    except:
+                                        #DEBUG
+                                        import pdb; pdb.set_trace()
+                else:
+                    assert inner_item == f[str(key)][inner_key][...]
+
+        # Make sure attributes save
+        npt.assert_allclose( f.attrs['x'], attrs['x'] )
+
+    ########################################################################
+
     def test_from_hdf5( self ):
 
         # Create test data

@@ -671,17 +671,22 @@ class Dict( collections.Mapping ):
 
             # Save data if the inner item isn't a Dict
             else:
-                try:
-                    f.create_dataset( current_path, data=item )
-                # Accounts for h5py not recognizing unicode. This is fixed
-                # in h5py 2.9.0, with PR #1032.
-                # The fix used here is exactly what the PR does.
-                except TypeError:
-                    data = np.array(
-                        item,
-                        dtype=h5py.special_dtype( vlen=six.text_type ),
-                    )
-                    f.create_dataset( current_path, data=data )
+
+                # Save an uneven array
+                if check_if_uneven_arr( item ):
+                    create_dataset_uneven_arr( f, current_path, item )
+                else:
+                    try:
+                        f.create_dataset( current_path, data=item )
+                    # Accounts for h5py not recognizing unicode. This is fixed
+                    # in h5py 2.9.0, with PR #1032.
+                    # The fix used here is exactly what the PR does.
+                    except TypeError:
+                        data = np.array(
+                            item,
+                            dtype=h5py.special_dtype( vlen=six.text_type ),
+                        )
+                        f.create_dataset( current_path, data=data )
 
         # Shallow dictionary condensed edge case
         shallow_condensed_save = ( self.depth() <= 2 ) and condensed
@@ -909,4 +914,85 @@ def dict_from_defaults_and_variations( defaults, variations ):
         result[key] = defaults_copy
 
     return result
+
+########################################################################
+
+def check_if_uneven_arr( arr ):
+    '''Check if an array-like object is contains arrays of
+    different sizes.
+
+    Args:
+        arr: Object to check.
+
+    Returns:
+        bool:
+            True if an array-like object with arrays of different sizes.
+    '''
+
+    # Check if an array-like
+    try:
+        len_arr = len( arr )
+    except TypeError:
+        return False
+
+    if len_arr > 1:
+
+        for i, arr_i in enumerate( arr ):
+
+            # Check if an array
+            try:
+                l_current = len( arr_i )
+            except TypeError:
+                l_current = 0
+
+            # Check if uneven
+            if i != 0:
+                if l_current != l_prev:
+                    return True
+            l_prev = copy.copy( l_current )
+
+            # Recurse
+            if check_if_uneven_arr( arr_i ): 
+                return True
+
+        # If got to this point, then it's even
+        return False
+
+########################################################################
+
+def create_dataset_uneven_arr( f, current_path, arr ):
+    '''Create a dataset for saving an uneven array.
+
+    Args:
+        f (open hdf5 file):
+            File to create the dataset on.
+
+        current_path (str):
+            Location in the file to save the array to.
+
+        arr (array-like):
+            Uneven array to save.
+    '''
+
+    for i, v in enumerate( arr ):
+
+        used_path = '{}/uneven{}'.format( current_path, i )
+
+        # If v is an uneven array, recurse
+        if check_if_uneven_arr( v ):
+            create_dataset_uneven_arr( f, used_path, v )
+            continue
+
+        # Save
+        try:
+            f.create_dataset( used_path, data=v )
+        # Accounts for h5py not recognizing unicode. This is fixed
+        # in h5py 2.9.0, with PR #1032.
+        # The fix used here is exactly what the PR does.
+        except TypeError:
+            data = np.array(
+                v,
+                dtype=h5py.special_dtype( vlen=six.text_type ),
+            )
+            f.create_dataset( used_path, data=data )
 
