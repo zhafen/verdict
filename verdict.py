@@ -795,7 +795,13 @@ class Dict( collections.Mapping ):
                     return Dict( result )
 
             elif isinstance( item, h5py.Dataset ):
-                return np.array( item[...] )
+                arr = np.array( item[...] )
+
+                # Handle 0-length arrays
+                if arr.shape == ():
+                    arr = arr[()]
+
+                return arr
 
         result = {}
         for key in f.keys():

@@ -826,20 +826,12 @@ class TestVerDictHDF5( unittest.TestCase ):
                     if inner_key in [ 'a', 'b' ]:
                         for i, arr in enumerate( inner_item ):
                             for j, v in enumerate( arr ):
-                                try:
-                                    assert v == f[str(key)][inner_key][...][i][j]
-                                except:
-                                    #DEBUG
-                                    import pdb; pdb.set_trace()
+                                assert v == f[str(key)][inner_key][...][i][j]
                     elif inner_key in [ 'd', ]:
                         for i, arr in enumerate( inner_item ):
                             for j, line in enumerate( arr ):
                                 for k, v in enumerate( line ):
-                                    try:
-                                        assert v == f[str(key)][inner_key][...][i][j][k]
-                                    except:
-                                        #DEBUG
-                                        import pdb; pdb.set_trace()
+                                    assert v == f[str(key)][inner_key][...][i][j][k]
                 else:
                     assert inner_item == f[str(key)][inner_key][...]
 
