@@ -998,6 +998,55 @@ class TestVerDictHDF5( unittest.TestCase ):
         # Make sure attributes save
         npt.assert_allclose( f.attrs['x'], attrs['x'] )
 
+    ########################################################################
+
+    def test_from_hdf5_uneven_arr( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            1 : {
+                'a': [
+                    np.array([ 1, 2, ]),
+                    np.array([ 1, 2, 3, 4 ]),
+                ],
+                'b': [
+                    np.array([ 'a', 'b', ]),
+                    np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                ],
+                'c': [
+                    [
+                        np.array([ 'a', 'b', ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                    ],
+                    [
+                        np.array([ 1, 2, ]),
+                        np.array([ 1, 2, 3, 4 ]),
+                    ],
+                ],
+            },
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5( self.savefile, attributes=attrs )
+
+        # Try to load
+        actual, attrs = verdict.Dict.from_hdf5( self.savefile, )
+
+        # Compare
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                if inner_key != 'c':
+                    for i, v in enumerate( inner_item ):
+                        for j, v_j in enumerate( v ):
+                            assert v_j == actual[str(key)][inner_key][i][j]
+                else:
+                    for i, v in enumerate( inner_item ):
+                        for j, v_j in enumerate( v ):
+                            for k, v_k in enumerate( v_j ):
+                                assert v_k == actual[str(key)][inner_key][i][j][k]
+
 ########################################################################
 ########################################################################
 

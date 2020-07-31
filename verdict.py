@@ -785,6 +785,13 @@ class Dict( collections.Mapping ):
                     for i_key in group.keys():
                         result[i_key] = recursive_retrieve( current_path, i_key )
 
+                    # Look for saved uneven arrays
+                    if i_key[:6] == 'uneven':
+                        return [
+                            result['uneven{}'.format( i )]
+                            for i in range( len( result ) )
+                        ]
+
                     return Dict( result )
 
             elif isinstance( item, h5py.Dataset ):
@@ -960,7 +967,7 @@ def check_if_uneven_arr( arr ):
 
 ########################################################################
 
-def create_dataset_uneven_arr( f, current_path, arr ):
+def create_dataset_uneven_arr( f, current_path, arr, uneven_flag='uneven' ):
     '''Create a dataset for saving an uneven array.
 
     Args:
@@ -972,11 +979,15 @@ def create_dataset_uneven_arr( f, current_path, arr ):
 
         arr (array-like):
             Uneven array to save.
+
+        uneven_flag (str):
+            Flag to indicate that this part of the hdf5 file contains part of
+            an uneven array-like.
     '''
 
     for i, v in enumerate( arr ):
 
-        used_path = '{}/uneven{}'.format( current_path, i )
+        used_path = '{}/{}{}'.format( current_path, uneven_flag, i )
 
         # If v is an uneven array, recurse
         if check_if_uneven_arr( v ):
