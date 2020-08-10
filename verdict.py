@@ -672,9 +672,9 @@ class Dict( collections.Mapping ):
             # Save data if the inner item isn't a Dict
             else:
 
-                # Save an uneven array
-                if check_if_uneven_arr( item ):
-                    create_dataset_uneven_arr( f, current_path, item )
+                # Save an jagged array
+                if check_if_jagged_arr( item ):
+                    create_dataset_jagged_arr( f, current_path, item )
                 else:
                     try:
                         f.create_dataset( current_path, data=item )
@@ -785,10 +785,10 @@ class Dict( collections.Mapping ):
                     for i_key in group.keys():
                         result[i_key] = recursive_retrieve( current_path, i_key )
 
-                    # Look for saved uneven arrays
-                    if i_key[:6] == 'uneven':
+                    # Look for saved jagged arrays
+                    if i_key[:6] == 'jagged':
                         return [
-                            result['uneven{}'.format( i )]
+                            result['jagged{}'.format( i )]
                             for i in range( len( result ) )
                         ]
 
@@ -930,7 +930,7 @@ def dict_from_defaults_and_variations( defaults, variations ):
 
 ########################################################################
 
-def check_if_uneven_arr( arr ):
+def check_if_jagged_arr( arr ):
     '''Check if an array-like object is contains arrays of
     different sizes.
 
@@ -958,14 +958,14 @@ def check_if_uneven_arr( arr ):
             except TypeError:
                 l_current = 0
 
-            # Check if uneven
+            # Check if jagged
             if i != 0:
                 if l_current != l_prev:
                     return True
             l_prev = copy.copy( l_current )
 
             # Recurse
-            if check_if_uneven_arr( arr_i ): 
+            if check_if_jagged_arr( arr_i ): 
                 return True
 
         # If got to this point, then it's even
@@ -973,8 +973,14 @@ def check_if_uneven_arr( arr ):
 
 ########################################################################
 
-def create_dataset_uneven_arr( f, current_path, arr, uneven_flag='uneven' ):
-    '''Create a dataset for saving an uneven array.
+def create_dataset_jagged_arr(
+        f,
+        current_path,
+        arr,
+        method = 'filled arr',
+        jagged_flag = 'jagged',
+    ):
+    '''Create a dataset for saving an jagged array.
 
     Args:
         f (open hdf5 file):
@@ -986,30 +992,96 @@ def create_dataset_uneven_arr( f, current_path, arr, uneven_flag='uneven' ):
         arr (array-like):
             Uneven array to save.
 
-        uneven_flag (str):
+        jagged_flag (str):
             Flag to indicate that this part of the hdf5 file contains part of
-            an uneven array-like.
+            an jagged array-like.
     '''
 
-    for i, v in enumerate( arr ):
+    if method == 'filled arr':
+        assert False
 
-        used_path = '{}/{}{}'.format( current_path, uneven_flag, i )
+    elif method == 'row datasets':
+        for i, v in enumerate( arr ):
 
-        # If v is an uneven array, recurse
-        if check_if_uneven_arr( v ):
-            create_dataset_uneven_arr( f, used_path, v )
-            continue
+            used_path = '{}/{}{}'.format( current_path, jagged_flag, i )
 
-        # Save
-        try:
-            f.create_dataset( used_path, data=v )
-        # Accounts for h5py not recognizing unicode. This is fixed
-        # in h5py 2.9.0, with PR #1032.
-        # The fix used here is exactly what the PR does.
-        except TypeError:
-            data = np.array(
-                v,
-                dtype=h5py.special_dtype( vlen=six.text_type ),
-            )
-            f.create_dataset( used_path, data=data )
+            # If v is an jagged array, recurse
+            if check_if_jagged_arr( v ):
+                create_dataset_jagged_arr( f, used_path, v )
+                continue
 
+            # Save
+            try:
+                f.create_dataset( used_path, data=v )
+            # Accounts for h5py not recognizing unicode. This is fixed
+            # in h5py 2.9.0, with PR #1032.
+            # The fix used here is exactly what the PR does.
+            except TypeError:
+                data = np.array(
+                    v,
+                    dtype=h5py.special_dtype( vlen=six.text_type ),
+                )
+                f.create_dataset( used_path, data=data )
+
+    else:
+        raise ValueError( 'Unrecognized jagged arr dataset method, {}'.format( method ) )
+
+
+########################################################################
+
+def jagged_arr_to_masked_arr( arr, fill_value=np.nan ):
+
+    def is_array_like( a ):
+        '''Check if something is array-like.'''
+        return hasattr( a, '__len__' ) and not isinstance( a, str )
+
+    def arr_depth( a, level=1 ):
+        '''Get the array depth, even for a jagged array.'''
+        depths = []
+        for v in a:
+            if is_array_like( v ):
+                depths.append( arr_depth( v, level+1 ) )
+            else:
+                return level
+
+        return max( depths )
+
+    def recursive_array_shape( a, s=[], level=0 ):
+        '''Loop through and get max dimensions of jagged array'''
+
+        # Get length at current depth
+        len_depth = np.array( a ).shape[0]
+
+        # Compare to s
+        if len( s ) > level:
+            s[level] = max( s[level], len_depth )
+        else:
+            s.append( len_depth )
+
+        # Recurse
+        for v in a:
+            if not is_array_like( v ):
+                continue
+            s = recursive_array_shape( v, s, level+1 )
+
+        return s
+            
+    shape = recursive_array_shape( arr )
+    new_arr = np.full( shape, fill_value )
+
+    def store_jagged_to_masked( a, m_a, ):
+        '''Actually store the jagged array to the masked array.'''
+
+        if arr_depth( a ) == 2:
+            for i, v in enumerate( a ):
+                m_a[i,:len(v)] = v
+            return m_a
+        else:
+            for i, v in enumerate( a ):
+                m_a[i] = store_jagged_to_masked( v, m_a[i] )
+
+        return m_a
+
+    new_arr = store_jagged_to_masked( arr, new_arr )
+
+    return new_arr

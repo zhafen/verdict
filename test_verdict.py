@@ -750,7 +750,114 @@ class TestVerDictHDF5( unittest.TestCase ):
 
     ########################################################################
 
-    def test_to_hdf5_uneven_lists( self ):
+    def test_masked_arr_to_jagged_arr( self ):
+
+        # Simple case
+        arr = [
+            [ 1, 2, 3 ],
+            [ 1, 2, ],
+            [ 1, 2, ],
+        ]
+        actual = verdict.jagged_arr_to_masked_arr( arr )
+        expected = np.array([
+            [ 1, 2, 3 ],
+            [ 1, 2, np.nan, ],
+            [ 1, 2, np.nan, ],
+        ])
+        npt.assert_allclose( expected, actual )
+
+    ########################################################################
+
+    def test_masked_arr_to_jagged_arr_nested( self ):
+
+        # Nested
+        arr = [
+            [
+                [ 1, 2, 3 ],
+                [ 1, 2, ],
+                [ 1, 2, ],
+            ],
+            [
+                [ 4, 5, ],
+                [ 4, 5, ],
+                [ 4, 5, ],
+            ],
+        ]
+        actual = verdict.jagged_arr_to_masked_arr( arr )
+        expected = np.array([
+            [
+                [ 1, 2, 3 ],
+                [ 1, 2, np.nan, ],
+                [ 1, 2, np.nan, ],
+            ],
+            [
+                [ 4, 5, np.nan, ],
+                [ 4, 5, np.nan, ],
+                [ 4, 5, np.nan, ],
+            ],
+        ])
+        npt.assert_allclose( expected, actual )
+
+    ########################################################################
+
+    def test_masked_arr_to_jagged_arr_messy( self ):
+
+        # Messy
+        arr = np.array([
+            [
+                [
+                    [ 1, 2, 3 ],
+                    [ 1, 2, ],
+                    [ 1, ],
+                ],
+                [
+                    [ 4, 5, ],
+                    [ 4, 5, ],
+                ],
+             ],
+             [
+                 [
+                     [ 1, ],
+                     [ 1, 2, ],
+                     [ 1, ],
+                 ],
+             ],
+        ])
+        expected = np.array([
+            [
+                [
+                    [ 1, 2, 3 ],
+                    [ 1, 2, np.nan, ],
+                    [ 1, np.nan, np.nan, ],
+                ],
+                [
+                    [ 4, 5, np.nan, ],
+                    [ 4, 5, np.nan, ],
+                    [ np.nan, np.nan, np.nan, ],
+                ],
+            ],
+            [
+                [
+                    [ 1, np.nan, np.nan, ],
+                    [ 1, 2, np.nan, ],
+                    [ 1, np.nan, np.nan, ],
+                ],
+                [
+                    [ np.nan, np.nan, np.nan, ],
+                    [ np.nan, np.nan, np.nan, ],
+                    [ np.nan, np.nan, np.nan, ],
+                ],
+            ],
+        ])
+
+        #DEBUG expected_shape = ( 2, 2, 3, 3 )
+
+        actual = verdict.jagged_arr_to_masked_arr( arr )
+        npt.assert_allclose( expected, actual )
+
+    ########################################################################
+
+    def test_to_hdf5_jagged_lists( self ):
 
         # Test data
         d = verdict.Dict( {
@@ -787,16 +894,71 @@ class TestVerDictHDF5( unittest.TestCase ):
             for inner_key, inner_item in item.items():
                 if inner_key != 'c':
                     for i, v in enumerate( inner_item ):
-                        ukey = 'uneven{}'.format( i )
+                        for j, v_j in enumerate( v ):
+                            assert v_j == f[str(key)][inner_key][...][i][j]
+                else:
+                    for i, v in enumerate( inner_item ):
+                        for j, v_j in enumerate( v ):
+                            for k, v_k in enumerate( v_j ):
+                                assert v_k == f[str(key)][inner_key][...][i,j,k]
+
+    ########################################################################
+
+    def test_to_hdf5_jagged_lists_alternate_method( self ):
+        '''This method saves the innermost element of each row of the array as
+        a separate dataset.
+        '''
+
+        # Test data
+        d = verdict.Dict( {
+            1 : {
+                'a': [
+                    np.array([ 1, 2, ]),
+                    np.array([ 1, 2, 3, 4 ]),
+                ],
+                'b': [
+                    np.array([ 'a', 'b', ]),
+                    np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                ],
+                'c': [
+                    [
+                        np.array([ 'a', 'b', ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                    ],
+                    [
+                        np.array([ 1, 2, ]),
+                        np.array([ 1, 2, 3, 4 ]),
+                    ],
+                ],
+            },
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5(
+            self.savefile,
+            attributes = attrs,
+            handle_jagged_arr = 'row datasets'
+        )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                if inner_key != 'c':
+                    for i, v in enumerate( inner_item ):
+                        ukey = 'jagged{}'.format( i )
                         for j, v_j in enumerate( v ):
                             assert v_j == f[str(key)][inner_key][ukey][...][j]
                 else:
                     for i, v in enumerate( inner_item ):
-                        ukey = 'uneven{}'.format( i )
+                        ukey = 'jagged{}'.format( i )
                         for j, v_j in enumerate( v ):
-                            ukey_j = 'uneven{}'.format( j )
+                            ukey_j = 'jagged{}'.format( j )
                             for k, v_k in enumerate( v_j ):
                                 assert v_k == f[str(key)][inner_key][ukey][ukey_j][...][k]
+
 
         ########################################################################
 
@@ -992,7 +1154,7 @@ class TestVerDictHDF5( unittest.TestCase ):
 
     ########################################################################
 
-    def test_from_hdf5_uneven_arr( self ):
+    def test_from_hdf5_jagged_arr( self ):
 
         # Test data
         d = verdict.Dict( {
