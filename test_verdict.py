@@ -758,7 +758,7 @@ class TestVerDictHDF5( unittest.TestCase ):
             [ 1, 2, ],
             [ 1, 2, ],
         ]
-        actual = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
+        actual, _ = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
         expected = np.array([
             [ 1, 2, 3 ],
             [ 1, 2, np.nan, ],
@@ -776,7 +776,7 @@ class TestVerDictHDF5( unittest.TestCase ):
             [ '1', '2', ],
             [ '1', '2', ],
         ]
-        actual = verdict.jagged_arr_to_filled_arr( arr, )
+        actual, _ = verdict.jagged_arr_to_filled_arr( arr, )
         expected = np.array([
             [ '1', '2', '3' ],
             [ '1', '2', 'nan', ],
@@ -801,7 +801,7 @@ class TestVerDictHDF5( unittest.TestCase ):
                 [ 4, 5, ],
             ],
         ]
-        actual = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
+        actual, _ = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
         expected = np.array([
             [
                 [ 1, 2, 3 ],
@@ -868,9 +868,7 @@ class TestVerDictHDF5( unittest.TestCase ):
             ],
         ])
 
-        #DEBUG expected_shape = ( 2, 2, 3, 3 )
-
-        actual = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
+        actual, _ = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
         npt.assert_allclose( expected, actual )
 
     ########################################################################
@@ -1187,6 +1185,57 @@ class TestVerDictHDF5( unittest.TestCase ):
                 ],
                 'c': [
                     [
+                        np.array([ 3, 3, ]),
+                        np.array([ 3, 3, 3,  3 ]),
+                        np.array([ 3, 3, 3,  3 ]),
+                    ],
+                    [
+                        np.array([ 1, 2, ]),
+                        np.array([ 1, 2, 3, 4 ]),
+                    ],
+                ],
+            },
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5( self.savefile, attributes=attrs )
+
+        # Try to load
+        actual, attrs = verdict.Dict.from_hdf5( self.savefile, )
+
+        # Compare
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                if inner_key != 'c':
+                    for i, v in enumerate( inner_item ):
+                        for j, v_j in enumerate( v ):
+                            assert v_j == actual[str(key)][inner_key][i][j]
+                else:
+                    for i, v in enumerate( inner_item ):
+                        for j, v_j in enumerate( v ):
+                            npt.assert_allclose(
+                                v_j,
+                                actual[str(key)]['c'][i][j]
+                            )
+
+    ########################################################################
+
+    def test_from_hdf5_jagged_arr_row_datasets( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            1 : {
+                'a': [
+                    np.array([ 1, 2, ]),
+                    np.array([ 1, 2, 3, 4 ]),
+                ],
+                'b': [
+                    np.array([ 'a', 'b', ]),
+                    np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                ],
+                'c': [
+                    [
                         np.array([ 'a', 'b', ]),
                         np.array([ 'aa', 'bb', 'cc', 'dd' ]),
                         np.array([ 'aa', 'bb', 'cc', 'dd' ]),
@@ -1201,7 +1250,11 @@ class TestVerDictHDF5( unittest.TestCase ):
         attrs = { 'x' : 1.5, }
 
         # Try to save
-        d.to_hdf5( self.savefile, attributes=attrs )
+        d.to_hdf5(
+            self.savefile,
+            attributes = attrs,
+            handle_jagged_arrs = 'row datasets'
+        )
 
         # Try to load
         actual, attrs = verdict.Dict.from_hdf5( self.savefile, )

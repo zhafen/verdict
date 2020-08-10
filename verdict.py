@@ -718,7 +718,8 @@ class Dict( collections.Mapping ):
         filepath,
         load_attributes = True,
         unpack = False,
-        unpack_name = 'name'
+        unpack_name = 'name',
+        look_for_saved_jagged_arrs = True,
     ):
         '''Load a HDF5 file as a verdict Dict.
 
@@ -781,17 +782,26 @@ class Dict( collections.Mapping ):
                     for i_key in group.keys():
                         result[i_key] = recursive_retrieve( current_path, i_key )
 
-                    # Look for saved jagged arrays
-                    if i_key[:6] == 'jagged':
-                        return [
-                            result['jagged{}'.format( i )]
-                            for i in range( len( result ) )
-                        ]
+                    if look_for_saved_jagged_arrs:
+                        # Look for saved jagged arrays
+                        if i_key[:6] == 'jagged':
+                            return [
+                                result['jagged{}'.format( i )]
+                                for i in range( len( result ) )
+                            ]
 
                     return Dict( result )
 
             elif isinstance( item, h5py.Dataset ):
                 arr = np.array( item[...] )
+
+                if look_for_saved_jagged_arrs:
+                    if 'jagged saved as filled' in item.attrs:
+                        arr = filled_arr_to_jagged_arr(
+                            item[...],
+                            item.attrs['fill value'],
+                        )
+                        return arr
 
                 # Handle 0-length arrays
                 if arr.shape == ():
@@ -926,7 +936,7 @@ def dict_from_defaults_and_variations( defaults, variations ):
 
 ########################################################################
 
-def create_dataset_fixed( f, path, data ):
+def create_dataset_fixed( f, path, data, attrs=None ):
     '''Accounts for h5py not recognizing unicode. This is fixed
     in h5py 2.9.0, with PR #1032 (not merged at the time of writing).
     The fix used here is exactly what the PR does.'''
@@ -939,6 +949,17 @@ def create_dataset_fixed( f, path, data ):
             dtype=h5py.special_dtype( vlen=six.text_type ),
         )
         f.create_dataset( path, data=data )
+
+    if attrs is not None:
+        for key, item in attrs.items():
+            try:
+                f[path].attrs[key] = item
+            except TypeError:
+                item = np.array(
+                    item,
+                    dtype=h5py.special_dtype( vlen=six.text_type ),
+                )
+                f[path].attrs[key] = item
 
 ########################################################################
 
@@ -1015,9 +1036,13 @@ def create_dataset_jagged_arr(
 
     if method == 'filled array':
 
-        filled_arr = jagged_arr_to_filled_arr( arr, fill_value )
+        filled_arr, fill_value = jagged_arr_to_filled_arr( arr, fill_value )
 
-        create_dataset_fixed( f, current_path, filled_arr )
+        attrs = {
+            'jagged saved as filled': True,
+            'fill value': fill_value
+        }
+        create_dataset_fixed( f, current_path, filled_arr, attrs=attrs )
 
     elif method == 'row datasets':
         for i, v in enumerate( arr ):
@@ -1060,10 +1085,6 @@ def jagged_arr_to_filled_arr( arr, fill_value=None, dtype=None, ):
         np n-dim array:
             A filled array with minimum dimensions needed to contain arr.
     '''
-
-    def is_array_like( a ):
-        '''Check if something is array-like.'''
-        return hasattr( a, '__len__' ) and not isinstance( a, str )
 
     def arr_depth( a, level=1 ):
         '''Get the array depth, even for a jagged array.'''
@@ -1129,4 +1150,41 @@ def jagged_arr_to_filled_arr( arr, fill_value=None, dtype=None, ):
 
     new_arr = store_jagged_to_masked( arr, new_arr )
 
-    return new_arr
+    return new_arr, fill_value
+
+########################################################################
+
+def filled_arr_to_jagged_arr( arr, fill_value ):
+    '''Convert a filled array to a jagged array
+
+    Args:
+        arr (np.ndarray):
+            Array to convert to a jagged set of lists.
+
+        fill_value:
+            Value to skip over.
+
+    Returns:
+        A list of lists instead of a filled array.
+    '''
+
+    result = []
+    for v in arr:
+        if is_array_like( v ):
+            result.append( filled_arr_to_jagged_arr( v, fill_value ) )
+        else:
+            if isinstance( v, str ):
+                if v == fill_value:
+                    continue
+            else:
+                if np.isclose( v, fill_value ):
+                    continue
+            result.append( v )
+
+    return result
+
+########################################################################
+
+def is_array_like( a ):
+    '''Check if something is array-like.'''
+    return hasattr( a, '__len__' ) and not isinstance( a, str )

@@ -10,7 +10,7 @@ Abbreviated feature list:
 * Nested dictionaries can be transposed, i.e. the nesting order can be changed.
 * keymin and keymax, which find the extrema values in the dictionary and their keys.
 * Subdivision according to the keys or a provided dictionary.
-* Support for saving and loading hdf5 arrays with irregular sizes.
+* Extensive support for saving and loading jagged arrays.
 
 To install:
 `pip install verdict`
