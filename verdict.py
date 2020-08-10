@@ -1015,7 +1015,10 @@ def create_dataset_jagged_arr(
 
 ########################################################################
 
-def jagged_arr_to_filled_arr( arr, fill_value=np.nan, dtype=None, ):
+def jagged_arr_to_filled_arr( arr, fill_value=None, dtype=None, ):
+    '''Convert a jagged array to a uniform filled array of minimum size
+    needed to contain all the data.
+    '''
 
     def is_array_like( a ):
         '''Check if something is array-like.'''
@@ -1061,7 +1064,14 @@ def jagged_arr_to_filled_arr( arr, fill_value=np.nan, dtype=None, ):
     else:
         dtype = dtypes[0]
 
-    new_arr = np.full( shape, dtype( fill_value ), )
+    # Choose automatic fill value
+    if fill_value is None:
+        if dtype == int:
+            fill_value = -9999
+        else:
+            fill_value = dtype( np.nan )
+
+    new_arr = np.full( shape, fill_value, )
 
     def store_jagged_to_masked( a, m_a, ):
         '''Actually store the jagged array to the masked array.'''

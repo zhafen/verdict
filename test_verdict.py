@@ -758,7 +758,7 @@ class TestVerDictHDF5( unittest.TestCase ):
             [ 1, 2, ],
             [ 1, 2, ],
         ]
-        actual = verdict.jagged_arr_to_filled_arr( arr )
+        actual = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
         expected = np.array([
             [ 1, 2, 3 ],
             [ 1, 2, np.nan, ],
@@ -776,7 +776,7 @@ class TestVerDictHDF5( unittest.TestCase ):
             [ '1', '2', ],
             [ '1', '2', ],
         ]
-        actual = verdict.jagged_arr_to_filled_arr( arr )
+        actual = verdict.jagged_arr_to_filled_arr( arr, )
         expected = np.array([
             [ '1', '2', '3' ],
             [ '1', '2', 'nan', ],
@@ -801,7 +801,7 @@ class TestVerDictHDF5( unittest.TestCase ):
                 [ 4, 5, ],
             ],
         ]
-        actual = verdict.jagged_arr_to_filled_arr( arr )
+        actual = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
         expected = np.array([
             [
                 [ 1, 2, 3 ],
@@ -870,7 +870,7 @@ class TestVerDictHDF5( unittest.TestCase ):
 
         #DEBUG expected_shape = ( 2, 2, 3, 3 )
 
-        actual = verdict.jagged_arr_to_filled_arr( arr )
+        actual = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
         npt.assert_allclose( expected, actual )
 
     ########################################################################
