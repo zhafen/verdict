@@ -675,6 +675,7 @@ class Dict( collections.Mapping ):
 
                 # Save a jagged array
                 if check_if_jagged_arr( item ):
+
                     create_dataset_jagged_arr(
                         f,
                         current_path,
@@ -986,9 +987,9 @@ def check_if_jagged_arr( arr ):
         for i, arr_i in enumerate( arr ):
 
             # Check if an array
-            try:
+            if is_array_like( arr_i ):
                 l_current = len( arr_i )
-            except TypeError:
+            else:
                 l_current = 0
 
             # Check if jagged
