@@ -581,7 +581,8 @@ class Dict( collections.Mapping ):
         filepath,
         attributes = None,
         overwrite_existing_file = True,
-        condensed = False
+        condensed = False,
+        handle_jagged_arrs = 'filled array',
     ):
         '''Save the contents as a HDF5 file.
 
@@ -672,9 +673,14 @@ class Dict( collections.Mapping ):
             # Save data if the inner item isn't a Dict
             else:
 
-                # Save an jagged array
+                # Save a jagged array
                 if check_if_jagged_arr( item ):
-                    create_dataset_jagged_arr( f, current_path, item )
+                    create_dataset_jagged_arr(
+                        f,
+                        current_path,
+                        item,
+                        method = handle_jagged_arrs
+                    )
                 else:
                     create_dataset_fixed( f, current_path, item )
 
@@ -920,6 +926,22 @@ def dict_from_defaults_and_variations( defaults, variations ):
 
 ########################################################################
 
+def create_dataset_fixed( f, path, data ):
+    '''Accounts for h5py not recognizing unicode. This is fixed
+    in h5py 2.9.0, with PR #1032 (not merged at the time of writing).
+    The fix used here is exactly what the PR does.'''
+
+    try:
+        f.create_dataset( path, data=data )
+    except TypeError:
+        data = np.array(
+            data,
+            dtype=h5py.special_dtype( vlen=six.text_type ),
+        )
+        f.create_dataset( path, data=data )
+
+########################################################################
+
 def check_if_jagged_arr( arr ):
     '''Check if an array-like object is contains arrays of
     different sizes.
@@ -967,7 +989,7 @@ def create_dataset_jagged_arr(
         f,
         current_path,
         arr,
-        method = 'filled arr',
+        method = 'filled array',
         fill_value = np.nan,
         jagged_flag = 'jagged',
     ):
@@ -991,7 +1013,7 @@ def create_dataset_jagged_arr(
             an jagged array-like.
     '''
 
-    if method == 'filled arr':
+    if method == 'filled array':
 
         filled_arr = jagged_arr_to_filled_arr( arr, fill_value )
 
@@ -1004,20 +1026,39 @@ def create_dataset_jagged_arr(
 
             # If v is an jagged array, recurse
             if check_if_jagged_arr( v ):
-                create_dataset_jagged_arr( f, used_path, v )
-                continue
-
-            create_dataset_fixed( f, used_path, v )
+                create_dataset_jagged_arr(
+                    f,
+                    used_path,
+                    v,
+                    method = method,
+                    jagged_flag = jagged_flag,
+                )
+            else:
+                create_dataset_fixed( f, used_path, v )
 
     else:
         raise ValueError( 'Unrecognized jagged arr dataset method, {}'.format( method ) )
-
 
 ########################################################################
 
 def jagged_arr_to_filled_arr( arr, fill_value=None, dtype=None, ):
     '''Convert a jagged array to a uniform filled array of minimum size
     needed to contain all the data.
+
+    Args:
+        arr (array-like):
+            Jagged array to convert to a filled array.
+
+        fill_value:
+            Fill value to use. Defaults to -9999 for integers, NaN otherwise.
+
+        dtype:
+            Datatype. Defaults to the datatype of arr, if arr consists of data
+            of one type.
+
+    Returns:
+        np n-dim array:
+            A filled array with minimum dimensions needed to contain arr.
     '''
 
     def is_array_like( a ):
@@ -1089,19 +1130,3 @@ def jagged_arr_to_filled_arr( arr, fill_value=None, dtype=None, ):
     new_arr = store_jagged_to_masked( arr, new_arr )
 
     return new_arr
-
-########################################################################
-
-def create_dataset_fixed( f, path, data ):
-    '''Accounts for h5py not recognizing unicode. This is fixed
-    in h5py 2.9.0, with PR #1032 (not merged at the time of writing).
-    The fix used here is exactly what the PR does.'''
-
-    try:
-        f.create_dataset( path, data=data )
-    except TypeError:
-        data = np.array(
-            data,
-            dtype=h5py.special_dtype( vlen=six.text_type ),
-        )
-        f.create_dataset( path, data=data )

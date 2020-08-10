@@ -957,7 +957,7 @@ class TestVerDictHDF5( unittest.TestCase ):
         d.to_hdf5(
             self.savefile,
             attributes = attrs,
-            handle_jagged_arr = 'row datasets'
+            handle_jagged_arrs = 'row datasets'
         )
 
         # Compare
