@@ -676,17 +676,7 @@ class Dict( collections.Mapping ):
                 if check_if_jagged_arr( item ):
                     create_dataset_jagged_arr( f, current_path, item )
                 else:
-                    try:
-                        f.create_dataset( current_path, data=item )
-                    # Accounts for h5py not recognizing unicode. This is fixed
-                    # in h5py 2.9.0, with PR #1032.
-                    # The fix used here is exactly what the PR does.
-                    except TypeError:
-                        data = np.array(
-                            item,
-                            dtype=h5py.special_dtype( vlen=six.text_type ),
-                        )
-                        f.create_dataset( current_path, data=data )
+                    create_dataset_fixed( f, current_path, item )
 
         # Shallow dictionary condensed edge case
         shallow_condensed_save = ( self.depth() <= 2 ) and condensed
@@ -978,6 +968,7 @@ def create_dataset_jagged_arr(
         current_path,
         arr,
         method = 'filled arr',
+        fill_value = np.nan,
         jagged_flag = 'jagged',
     ):
     '''Create a dataset for saving an jagged array.
@@ -992,13 +983,19 @@ def create_dataset_jagged_arr(
         arr (array-like):
             Uneven array to save.
 
+        fill_value :
+            Fill value to use when using the filled arr method.
+
         jagged_flag (str):
             Flag to indicate that this part of the hdf5 file contains part of
             an jagged array-like.
     '''
 
     if method == 'filled arr':
-        assert False
+
+        filled_arr = jagged_arr_to_filled_arr( arr, fill_value )
+
+        create_dataset_fixed( f, current_path, filled_arr )
 
     elif method == 'row datasets':
         for i, v in enumerate( arr ):
@@ -1010,18 +1007,7 @@ def create_dataset_jagged_arr(
                 create_dataset_jagged_arr( f, used_path, v )
                 continue
 
-            # Save
-            try:
-                f.create_dataset( used_path, data=v )
-            # Accounts for h5py not recognizing unicode. This is fixed
-            # in h5py 2.9.0, with PR #1032.
-            # The fix used here is exactly what the PR does.
-            except TypeError:
-                data = np.array(
-                    v,
-                    dtype=h5py.special_dtype( vlen=six.text_type ),
-                )
-                f.create_dataset( used_path, data=data )
+            create_dataset_fixed( f, used_path, v )
 
     else:
         raise ValueError( 'Unrecognized jagged arr dataset method, {}'.format( method ) )
@@ -1029,7 +1015,7 @@ def create_dataset_jagged_arr(
 
 ########################################################################
 
-def jagged_arr_to_masked_arr( arr, fill_value=np.nan ):
+def jagged_arr_to_filled_arr( arr, fill_value=np.nan, dtype=None, ):
 
     def is_array_like( a ):
         '''Check if something is array-like.'''
@@ -1043,11 +1029,10 @@ def jagged_arr_to_masked_arr( arr, fill_value=np.nan ):
                 depths.append( arr_depth( v, level+1 ) )
             else:
                 return level
-
         return max( depths )
 
-    def recursive_array_shape( a, s=[], level=0 ):
-        '''Loop through and get max dimensions of jagged array'''
+    def recursive_array_shape( a, s=[], dtypes=[], level=0 ):
+        '''Loop through and get max dimensions and datatypes of jagged array'''
 
         # Get length at current depth
         len_depth = np.array( a ).shape[0]
@@ -1061,13 +1046,22 @@ def jagged_arr_to_masked_arr( arr, fill_value=np.nan ):
         # Recurse
         for v in a:
             if not is_array_like( v ):
+                if type( v ) not in dtypes:
+                    dtypes.append( type( v ) )
                 continue
-            s = recursive_array_shape( v, s, level+1 )
+            s, dtypes = recursive_array_shape( v, s, dtypes, level+1 )
 
-        return s
+        return s, dtypes
             
-    shape = recursive_array_shape( arr )
-    new_arr = np.full( shape, fill_value )
+    shape, dtypes = recursive_array_shape( arr )
+    
+    # Choose array type
+    if len( dtypes ) > 1 and dtype is None:
+        raise TypeError( 'Must choose dtype for jagged arrays with multiple data types.' )
+    else:
+        dtype = dtypes[0]
+
+    new_arr = np.full( shape, dtype( fill_value ), )
 
     def store_jagged_to_masked( a, m_a, ):
         '''Actually store the jagged array to the masked array.'''
@@ -1085,3 +1079,19 @@ def jagged_arr_to_masked_arr( arr, fill_value=np.nan ):
     new_arr = store_jagged_to_masked( arr, new_arr )
 
     return new_arr
+
+########################################################################
+
+def create_dataset_fixed( f, path, data ):
+    '''Accounts for h5py not recognizing unicode. This is fixed
+    in h5py 2.9.0, with PR #1032 (not merged at the time of writing).
+    The fix used here is exactly what the PR does.'''
+
+    try:
+        f.create_dataset( path, data=data )
+    except TypeError:
+        data = np.array(
+            data,
+            dtype=h5py.special_dtype( vlen=six.text_type ),
+        )
+        f.create_dataset( path, data=data )

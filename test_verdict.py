@@ -750,7 +750,7 @@ class TestVerDictHDF5( unittest.TestCase ):
 
     ########################################################################
 
-    def test_masked_arr_to_jagged_arr( self ):
+    def test_jagged_arr_to_filled_arr( self ):
 
         # Simple case
         arr = [
@@ -758,7 +758,7 @@ class TestVerDictHDF5( unittest.TestCase ):
             [ 1, 2, ],
             [ 1, 2, ],
         ]
-        actual = verdict.jagged_arr_to_masked_arr( arr )
+        actual = verdict.jagged_arr_to_filled_arr( arr )
         expected = np.array([
             [ 1, 2, 3 ],
             [ 1, 2, np.nan, ],
@@ -768,7 +768,25 @@ class TestVerDictHDF5( unittest.TestCase ):
 
     ########################################################################
 
-    def test_masked_arr_to_jagged_arr_nested( self ):
+    def test_jagged_arr_to_filled_arr_str( self ):
+
+        # Simple case
+        arr = [
+            [ '1', '2', '3' ],
+            [ '1', '2', ],
+            [ '1', '2', ],
+        ]
+        actual = verdict.jagged_arr_to_filled_arr( arr )
+        expected = np.array([
+            [ '1', '2', '3' ],
+            [ '1', '2', 'nan', ],
+            [ '1', '2', 'nan', ],
+        ])
+        npt.assert_equal( expected, actual )
+
+    ########################################################################
+
+    def test_jagged_arr_to_filled_arr_nested( self ):
 
         # Nested
         arr = [
@@ -783,7 +801,7 @@ class TestVerDictHDF5( unittest.TestCase ):
                 [ 4, 5, ],
             ],
         ]
-        actual = verdict.jagged_arr_to_masked_arr( arr )
+        actual = verdict.jagged_arr_to_filled_arr( arr )
         expected = np.array([
             [
                 [ 1, 2, 3 ],
@@ -800,7 +818,7 @@ class TestVerDictHDF5( unittest.TestCase ):
 
     ########################################################################
 
-    def test_masked_arr_to_jagged_arr_messy( self ):
+    def test_jagged_arr_to_filled_arr_messy( self ):
 
         # Messy
         arr = np.array([
@@ -852,7 +870,7 @@ class TestVerDictHDF5( unittest.TestCase ):
 
         #DEBUG expected_shape = ( 2, 2, 3, 3 )
 
-        actual = verdict.jagged_arr_to_masked_arr( arr )
+        actual = verdict.jagged_arr_to_filled_arr( arr )
         npt.assert_allclose( expected, actual )
 
     ########################################################################
