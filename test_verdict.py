@@ -895,8 +895,8 @@ class TestVerDictHDF5( unittest.TestCase ):
                         np.array([ 'aa', 'bb', 'cc', 'dd' ]),
                     ],
                     [
-                        np.array([ 1, 2, ]),
-                        np.array([ 1, 2, 3, 4 ]),
+                        np.array([ '1', '2', ]),
+                        np.array([ '1', '2', '3', '4' ]),
                     ],
                 ],
             },
@@ -904,7 +904,7 @@ class TestVerDictHDF5( unittest.TestCase ):
         attrs = { 'x' : 1.5, }
 
         # Try to save
-        d.to_hdf5( self.savefile, attributes=attrs )
+        d.to_hdf5( self.savefile, attributes=attrs, )
 
         # Compare
         f = h5py.File( self.savefile, 'r' )

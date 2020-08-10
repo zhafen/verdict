@@ -990,7 +990,7 @@ def create_dataset_jagged_arr(
         current_path,
         arr,
         method = 'filled array',
-        fill_value = np.nan,
+        fill_value = None,
         jagged_flag = 'jagged',
     ):
     '''Create a dataset for saving an jagged array.
@@ -1107,10 +1107,10 @@ def jagged_arr_to_filled_arr( arr, fill_value=None, dtype=None, ):
 
     # Choose automatic fill value
     if fill_value is None:
-        if dtype == int:
-            fill_value = -9999
-        else:
+        try:
             fill_value = dtype( np.nan )
+        except ValueError:
+            fill_value = dtype( -9999 )
 
     new_arr = np.full( shape, fill_value, )
 

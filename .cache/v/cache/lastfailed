@@ -1,1 +1,3 @@
-{}
+{
+  "test_verdict.py::TestVerDictHDF5::test_from_hdf5_jagged_arr": true
+}
