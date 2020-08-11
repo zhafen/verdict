@@ -1113,28 +1113,48 @@ def jagged_arr_to_filled_arr( arr, fill_value=None, dtype=None, ):
         for v in a:
             if not is_array_like( v ):
                 if type( v ) not in dtypes:
-                    dtypes.append( type( v ) )
+                    if isinstance( v, str ):
+                        dtype = len( v )
+                    else:
+                        dtype = type( v )
+                    dtypes.append( dtype )
                 continue
             s, dtypes = recursive_array_shape( v, s, dtypes, level+1 )
 
         return s, dtypes
             
     shape, dtypes = recursive_array_shape( arr )
-    
+
+    # The two sections below are somewhat complicated as a result of these:
+    # a) The full length of all strings must be saved.
+    # b) Passing dtype to np.full can result in unexpected behavior.
+    # c) np.dtype( int ).type( np.nan ) is overly long and complicated.
+
     # Choose array type
-    if len( dtypes ) > 1 and dtype is None:
+    str_dtype = not False in [ isinstance( _, int ) for _ in dtypes ]
+    if str_dtype:
+        # The + [3,] gives a minimum length
+        dtype = '<U{}'.format( max( dtypes+[ 3, ] ) )
+    elif len( dtypes ) > 1 and dtype is None:
         raise TypeError( 'Must choose dtype for jagged arrays with multiple data types.' )
     else:
         dtype = dtypes[0]
 
     # Choose automatic fill value
     if fill_value is None:
-        try:
-            fill_value = dtype( np.nan )
-        except ValueError:
-            fill_value = dtype( -9999 )
+        if str_dtype:
+            arr_dtype = dtype
+            fill_value = np.nan
+        else:
+            arr_dtype = np.float64
+            try:
+                fill_value = dtype( np.nan )
+            except ValueError:
+                fill_value = dtype( -9999 )
+    else:
+        arr_dtype = type( fill_value )
 
-    new_arr = np.full( shape, fill_value, )
+    new_arr = np.full( shape, fill_value, dtype=arr_dtype )
 
     def store_jagged_to_masked( a, m_a, ):
         '''Actually store the jagged array to the masked array.'''
