@@ -791,9 +791,9 @@ class TestVerDictHDF5( unittest.TestCase ):
         # Nested
         arr = [
             [
-                [ 1, 2, 3 ],
                 [ 1, 2, ],
                 [ 1, 2, ],
+                [ 1, 2, 3, ],
             ],
             [
                 [ 4, 5, ],
@@ -804,9 +804,9 @@ class TestVerDictHDF5( unittest.TestCase ):
         actual, _ = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
         expected = np.array([
             [
-                [ 1, 2, 3 ],
+                [ 1, 2, np.nan ],
                 [ 1, 2, np.nan, ],
-                [ 1, 2, np.nan, ],
+                [ 1, 2, 3, ],
             ],
             [
                 [ 4, 5, np.nan, ],

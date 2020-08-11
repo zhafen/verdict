@@ -601,6 +601,14 @@ class Dict( collections.Mapping ):
             condensed (boolean):
                 If True, combine the innermost dictionaries into a condensed
                 DataFrame/array-like format.
+
+            handle_jagged_arrs (str):
+                How to handle jagged arrays. Options:
+                    filled array:
+                        Create a uniform filled array capable of holding
+                        any jagged arrays.
+                    row datasets:
+                        Save each row of a jagged array as a separate dataset.
         '''
 
         # Make sure all contained dictionaries are verdict Dicts
@@ -1089,12 +1097,17 @@ def jagged_arr_to_filled_arr( arr, fill_value=None, dtype=None, ):
 
     def arr_depth( a, level=1 ):
         '''Get the array depth, even for a jagged array.'''
+
+        if len( a ) == 0:
+            return level
+
         depths = []
         for v in a:
             if is_array_like( v ):
                 depths.append( arr_depth( v, level+1 ) )
             else:
-                return level
+                depths.append( level )
+
         return max( depths )
 
     def recursive_array_shape( a, s=[], dtypes=[], level=0 ):
