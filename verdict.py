@@ -117,8 +117,13 @@ class Dict( collections.Mapping ):
 
         results = {}
 
-        for key in self.keys():
-            results[key] = self._storage[key]*other
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key]*other[key]
+
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key]*other
 
         return Dict( results )
 
