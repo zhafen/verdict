@@ -113,6 +113,49 @@ class Dict( collections.Mapping ):
     # Operation Methods
     ########################################################################
 
+    def __add__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key] + other[key]
+
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key] + other
+
+        return Dict( results )
+
+    __radd__ = __add__
+
+    def __sub__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key] - other[key]
+
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key] - other
+
+        return Dict( results )
+
+    def __rsub__( self, other ):
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = other[key] - self._storage[key]
+
+        else:
+            for key in self.keys():
+                results[key] = other - self._storage[key]
+
+        return Dict( results )
+
     def __mul__( self, other ):
 
         results = {}
@@ -128,4 +171,82 @@ class Dict( collections.Mapping ):
         return Dict( results )
 
     __rmul__ = __mul__
+
+    def __div__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key]/other[key]
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key]/other
+
+        return Dict( results )
+
+    def __truediv__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key]/other[key]
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key]/other
+
+        return Dict( results )
+
+    def __floordiv__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = self._storage[key]//other[key]
+        else:
+            for key in self.keys():
+                results[key] = self._storage[key]//other
+
+        return Dict( results )
+
+    def __rdiv__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = other[key]/self._storage[key]
+        else:
+            for key in self.keys():
+                results[key] = other/self._storage[key]
+
+        return Dict( results )
+
+    def __rtruediv__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = other[key]/self._storage[key]
+        else:
+            for key in self.keys():
+                results[key] = other/self._storage[key]
+
+        return Dict( results )
+
+    def __rfloordiv__( self, other ):
+
+        results = {}
+
+        if isinstance( other, Dict ):
+            for key in self.keys():
+                results[key] = other[key]//self._storage[key]
+        else:
+            for key in self.keys():
+                results[key] = other//self._storage[key]
+
+        return Dict( results )
 
