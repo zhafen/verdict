@@ -109,4 +109,17 @@ class Dict( collections.Mapping ):
 
         self.__dict__ = state
 
+    ########################################################################
+    # Operation Methods
+    ########################################################################
+
+    def __mul__( self, other ):
+
+        results = {}
+
+        for key in self.keys():
+            results[key] = self._storage[key]*other
+
+        return Dict( results )
+
 
