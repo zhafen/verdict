@@ -424,3 +424,792 @@ class TestVerDict( unittest.TestCase ):
             for i_key, i_item in item.items():
                 assert i_item.equals( actual[key][i_key] )
 
+########################################################################
+
+class TestVerDictHDF5( unittest.TestCase ):
+
+    def setUp( self ):
+
+        self.savefile = 'to_hdf5_test.hdf5'
+
+    def tearDown( self ):
+
+        # Delete spurious files
+        if os.path.isfile( self.savefile ):
+            os.remove( self.savefile )
+
+    ########################################################################
+
+    def test_to_hdf5( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': np.array([ 1., 2. ]),
+                'b': np.array([ 3., 4. ]),
+            } ),
+            2 : verdict.Dict( {
+                'a': np.array([ 5., 6. ]),
+                'b': np.array([ 7., 8. ]),
+            } ),
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5( self.savefile, attributes=attrs )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    f[str(key)][inner_key][...],
+                )
+
+        # Make sure attributes save
+        npt.assert_allclose( f.attrs['x'], attrs['x'] )
+
+    ########################################################################
+
+    def test_to_hdf5_additional_nesting( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            'i' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': np.array([ 1., 2. ]),
+                    'b': np.array([ 3., 4. ]),
+                } ),
+                2 : verdict.Dict( {
+                    'a': np.array([ 5., 6. ]),
+                    'b': np.array([ 7., 8. ]),
+                } ),
+            } ),
+            'ii' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': np.array([ 10., 20. ]),
+                    'b': np.array([ 30., 40. ]),
+                } ),
+                2 : verdict.Dict( {
+                    'a': np.array([ 50., 60. ]),
+                    'b': np.array([ 70., 80. ]),
+                } ),
+            } ),
+        } )
+
+        # Try to save
+        d.to_hdf5( self.savefile )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                for ii_key, ii_item in inner_item.items():
+                    npt.assert_allclose(
+                        ii_item,
+                        f[key][str(inner_key)][ii_key][...],
+                    )
+
+    ########################################################################
+
+    def test_to_hdf5_condensed( self ):
+
+        savefile = 'to_hdf5_test.hdf5'
+
+        # Test data
+        d = verdict.Dict( {
+            'i' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': 1.,
+                    'b': 3.,
+                } ),
+                2 : verdict.Dict( {
+                    'a': 5.,
+                    'b': 7.,
+                } ),
+            } ),
+            'ii' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': 10.,
+                    'b': 30.,
+                } ),
+                2 : verdict.Dict( {
+                    'a': 50.,
+                    'b': 70.,
+                } ),
+            } ),
+        } )
+
+        # Try to save
+        d.to_hdf5( self.savefile, condensed=True )
+
+        expected = {
+            'i': {
+                'name': np.array([ 'a', 'b' ]),
+                '1': np.array([ 1., 3., ]),
+                '2': np.array([ 5., 7., ]),
+            },
+            'ii': {
+                'name': np.array([ 'a', 'b' ]),
+                '1': np.array([ 10., 30., ]),
+                '2': np.array([ 50., 70., ]),
+            },
+        }
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in expected.items():
+            for inner_key, inner_item in item.items():
+                try:
+                    npt.assert_allclose(
+                        inner_item,
+                        f[key][inner_key][...],
+                    )
+                except TypeError:
+                    assert len( np.setdiff1d(
+                        inner_item,
+                        f[key][inner_key][...],
+                    ) ) == 0
+
+    ########################################################################
+
+    def test_to_hdf5_condensed_shallow( self ):
+
+        savefile = 'to_hdf5_test.hdf5'
+
+        # Test data
+        d = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': 1.,
+                'b': 3.,
+            } ),
+            2 : verdict.Dict( {
+                'a': 5.,
+                'b': 7.,
+            } ),
+        } )
+
+        # Try to save
+        d.to_hdf5( self.savefile, condensed=True )
+
+        expected = {
+            'name': np.array([ 'a', 'b' ]),
+            '1': np.array([ 1., 3., ]),
+            '2': np.array([ 5., 7., ]),
+        }
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in expected.items():
+            try:
+                npt.assert_allclose(
+                    item,
+                    f[key][...],
+                )
+            except TypeError:
+                assert len( np.setdiff1d(
+                    item,
+                    f[key][...],
+                ) ) == 0
+
+    ########################################################################
+
+    def test_to_hdf5_single_arr_exception( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            1 : {
+                'a': np.array([ 1., 2. ]),
+                'b': np.array([ 3., 4. ]),
+            },
+        } )
+        d['c'] = {
+            'a': np.array([ 5., 6. ]),
+        }
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5( self.savefile, attributes=attrs )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    f[str(key)][inner_key][...],
+                )
+
+        # Make sure attributes save
+        npt.assert_allclose( f.attrs['x'], attrs['x'] )
+
+    ########################################################################
+
+    def test_jagged_arr_to_filled_arr( self ):
+
+        # Simple case
+        arr = [
+            [ 1, 2, 3 ],
+            [ 1, 2, ],
+            [ 1, 2, ],
+        ]
+        actual, _ = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
+        expected = np.array([
+            [ 1, 2, 3 ],
+            [ 1, 2, np.nan, ],
+            [ 1, 2, np.nan, ],
+        ])
+        npt.assert_allclose( expected, actual )
+
+    ########################################################################
+
+    def test_jagged_arr_to_filled_arr_str( self ):
+
+        # Simple case
+        arr = [
+            [ '1', '2', '3' ],
+            [ '1', '2', ],
+            [ '1', '2', ],
+        ]
+        actual, _ = verdict.jagged_arr_to_filled_arr( arr, )
+        expected = np.array([
+            [ '1', '2', '3' ],
+            [ '1', '2', 'nan', ],
+            [ '1', '2', 'nan', ],
+        ])
+        npt.assert_equal( expected, actual )
+
+    ########################################################################
+
+    def test_jagged_arr_to_filled_arr_nested( self ):
+
+        # Nested
+        arr = [
+            [
+                [ 1, 2, ],
+                [ 1, 2, ],
+                [ 1, 2, 3, ],
+            ],
+            [
+                [ 4, 5, ],
+                [ 4, 5, ],
+                [ 4, 5, ],
+            ],
+        ]
+        actual, _ = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
+        expected = np.array([
+            [
+                [ 1, 2, np.nan ],
+                [ 1, 2, np.nan, ],
+                [ 1, 2, 3, ],
+            ],
+            [
+                [ 4, 5, np.nan, ],
+                [ 4, 5, np.nan, ],
+                [ 4, 5, np.nan, ],
+            ],
+        ])
+        npt.assert_allclose( expected, actual )
+
+    ########################################################################
+
+    def test_jagged_arr_to_filled_arr_messy( self ):
+
+        # Messy
+        arr = np.array([
+            [
+                [
+                    [ 1, 2, 3 ],
+                    [ 1, 2, ],
+                    [ 1, ],
+                ],
+                [
+                    [ 4, 5, ],
+                    [ 4, 5, ],
+                ],
+             ],
+             [
+                 [
+                     [ 1, ],
+                     [ 1, 2, ],
+                     [ 1, ],
+                 ],
+             ],
+        ])
+        expected = np.array([
+            [
+                [
+                    [ 1, 2, 3 ],
+                    [ 1, 2, np.nan, ],
+                    [ 1, np.nan, np.nan, ],
+                ],
+                [
+                    [ 4, 5, np.nan, ],
+                    [ 4, 5, np.nan, ],
+                    [ np.nan, np.nan, np.nan, ],
+                ],
+            ],
+            [
+                [
+                    [ 1, np.nan, np.nan, ],
+                    [ 1, 2, np.nan, ],
+                    [ 1, np.nan, np.nan, ],
+                ],
+                [
+                    [ np.nan, np.nan, np.nan, ],
+                    [ np.nan, np.nan, np.nan, ],
+                    [ np.nan, np.nan, np.nan, ],
+                ],
+            ],
+        ])
+
+        actual, _ = verdict.jagged_arr_to_filled_arr( arr, fill_value=np.nan )
+        npt.assert_allclose( expected, actual )
+
+    ########################################################################
+
+    def test_to_hdf5_jagged_lists( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            1 : {
+                'a': [
+                    np.array([ 1, 2, ]),
+                    np.array([ 1, 2, 3, 4 ]),
+                ],
+                'b': [
+                    np.array([ 'a', 'b', ]),
+                    np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                ],
+                'c': [
+                    [
+                        np.array([ 'a', 'b', ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                    ],
+                    [
+                        np.array([ '1', '2', ]),
+                        np.array([ '1', '2', '3', '4' ]),
+                    ],
+                ],
+            },
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5( self.savefile, attributes=attrs, )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                if inner_key != 'c':
+                    for i, v in enumerate( inner_item ):
+                        for j, v_j in enumerate( v ):
+                            assert v_j == f[str(key)][inner_key][...][i][j]
+                else:
+                    for i, v in enumerate( inner_item ):
+                        for j, v_j in enumerate( v ):
+                            for k, v_k in enumerate( v_j ):
+                                assert v_k == f[str(key)][inner_key][...][i,j,k]
+
+    ########################################################################
+
+    def test_to_hdf5_jagged_lists_alternate_method( self ):
+        '''This method saves the innermost element of each row of the array as
+        a separate dataset.
+        '''
+
+        # Test data
+        d = verdict.Dict( {
+            1 : {
+                'a': [
+                    np.array([ 1, 2, ]),
+                    np.array([ 1, 2, 3, 4 ]),
+                ],
+                'b': [
+                    np.array([ 'a', 'b', ]),
+                    np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                ],
+                'c': [
+                    [
+                        np.array([ 'a', 'b', ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                    ],
+                    [
+                        np.array([ 1, 2, ]),
+                        np.array([ 1, 2, 3, 4 ]),
+                    ],
+                ],
+            },
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5(
+            self.savefile,
+            attributes = attrs,
+            handle_jagged_arrs = 'row datasets'
+        )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                if inner_key != 'c':
+                    for i, v in enumerate( inner_item ):
+                        ukey = 'jagged{}'.format( i )
+                        for j, v_j in enumerate( v ):
+                            assert v_j == f[str(key)][inner_key][ukey][...][j]
+                else:
+                    for i, v in enumerate( inner_item ):
+                        ukey = 'jagged{}'.format( i )
+                        for j, v_j in enumerate( v ):
+                            ukey_j = 'jagged{}'.format( j )
+                            for k, v_k in enumerate( v_j ):
+                                assert v_k == f[str(key)][inner_key][ukey][ukey_j][...][k]
+
+
+        ########################################################################
+
+        def test_to_hdf5_string_and_tuple_array( self ):
+
+            # Test data
+            d = verdict.Dict( {
+                1 : {
+                    'a': np.array([ ( 'aa', 'bb' ), ( 'cc', 'dd' ) ]),
+                    'b': np.array([ ( 'a', 'b' ), ( 'c', 'd' ) ]),
+                    'c': 'abcdefg',
+                    'd': [
+                        np.array([ ( 'a', 'b' ), ]),
+                        np.array([ ( 'aa', 'bb' ), ( 'cc', 'dd' ) ]),
+                    ],
+                },
+            } )
+            attrs = { 'x' : 1.5, }
+
+            # Try to save
+            d.to_hdf5( self.savefile, attributes=attrs )
+
+            # Compare
+            f = h5py.File( self.savefile, 'r' )
+            for key, item in d.items():
+                for inner_key, inner_item in item.items():
+                    if inner_key in [ 'a', 'b' ]:
+                        for i, arr in enumerate( inner_item ):
+                            for j, v in enumerate( arr ):
+                                assert v == f[str(key)][inner_key][...][i][j]
+                    elif inner_key in [ 'd', ]:
+                        for i, arr in enumerate( inner_item ):
+                            for j, line in enumerate( arr ):
+                                for k, v in enumerate( line ):
+                                    assert v == f[str(key)][inner_key][...][i][j][k]
+                else:
+                    assert inner_item == f[str(key)][inner_key][...]
+
+        # Make sure attributes save
+        npt.assert_allclose( f.attrs['x'], attrs['x'] )
+
+    ########################################################################
+
+    def test_from_hdf5( self ):
+
+        # Create test data
+        expected = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': np.array([ 1., 2. ]),
+                'b': np.array([ 3., 4. ]),
+            } ),
+            2 : verdict.Dict( {
+                'a': np.array([ 5., 6. ]),
+                'b': np.array([ 7., 8. ]),
+            } ),
+        } )
+        attrs = { 'x': 1.5 }
+        expected.to_hdf5( self.savefile, attributes=attrs )
+
+        # Try to load
+        actual, actual_attrs = verdict.Dict.from_hdf5(
+            self.savefile,
+            load_attributes = True,
+        )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in actual.items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    f[str(key)][inner_key][...],
+                )
+
+        # Compare attributes
+        self.assertEqual( attrs, actual_attrs )
+
+    ########################################################################
+
+    def test_from_hdf5_condensed( self ):
+
+        # Create test data
+        expected = verdict.Dict( {
+            'i' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': 1.,
+                    'b': 3.,
+                } ),
+                2 : verdict.Dict( {
+                    'a': 5.,
+                    'b': 7.,
+                } ),
+            } ),
+            'ii' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': 10.,
+                    'b': 30.,
+                } ),
+                2 : verdict.Dict( {
+                    'a': 50.,
+                    'b': 70.,
+                } ),
+            } ),
+        } )
+        expected.to_hdf5( self.savefile, condensed=True )
+
+        # Try to load
+        actual = verdict.Dict.from_hdf5( self.savefile, unpack=True )
+
+        # Compare
+        for key, item in expected.items():
+            for inner_key, inner_item in item.items():
+                for ii_key, ii_item in inner_item.items():
+                    npt.assert_allclose(
+                        ii_item,
+                        actual[key][str(inner_key)][ii_key],
+                    )
+
+    ########################################################################
+
+    def test_from_hdf5_condensed_shallow( self ):
+
+        # Create test data
+        expected = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': 1.,
+                'b': 3.,
+            } ),
+            2 : verdict.Dict( {
+                'a': 5.,
+                'b': 7.,
+            } ),
+        } )
+        expected.to_hdf5( self.savefile, condensed=True )
+
+        # Try to load
+        actual = verdict.Dict.from_hdf5( self.savefile, unpack=True )
+
+        # Compare
+        for key, item in expected.items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    actual[str(key)][inner_key],
+                )
+
+    ########################################################################
+
+    def test_from_hdf5_one_entry_dict( self ):
+
+        # Test data
+        base_arr = np.array([
+            [
+                [ 1., 2., ],
+                [ 3., 4., ],
+            ],
+            [
+                [ 5., 6., ],
+                [ 7., 8., ],
+            ],
+        ])
+        d = verdict.Dict( {
+            'A' : {
+                '1' : {
+                    'a': base_arr,
+                    'b': 2. * base_arr,
+                },
+                '2' : {
+                    'c': 3. * base_arr,
+                    'd': 4. * base_arr,
+                },
+            }
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5( self.savefile, attributes=attrs )
+
+        # Try to load
+        actual, attrs = verdict.Dict.from_hdf5( self.savefile, )
+
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in d['A'].items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    actual['A'][str(key)][inner_key][...],
+                )
+
+        # Make sure attributes save
+        npt.assert_allclose( f.attrs['x'], attrs['x'] )
+
+    ########################################################################
+
+    def test_from_hdf5_jagged_arr( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            1 : {
+                'a': [
+                    np.array([ 1, 2, ]),
+                    np.array([ 1, 2, 3, 4 ]),
+                ],
+                'b': [
+                    np.array([ 'a', 'b', ]),
+                    np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                ],
+                'c': [
+                    [
+                        np.array([ 3, 3, ]),
+                        np.array([ 3, 3, 3,  3 ]),
+                        np.array([ 3, 3, 3,  3 ]),
+                    ],
+                    [
+                        np.array([ 1, 2, ]),
+                        np.array([ 1, 2, 3, 4 ]),
+                    ],
+                ],
+            },
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5( self.savefile, attributes=attrs )
+
+        # Try to load
+        actual, attrs = verdict.Dict.from_hdf5( self.savefile, )
+
+        # Compare
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                if inner_key != 'c':
+                    for i, v in enumerate( inner_item ):
+                        for j, v_j in enumerate( v ):
+                            assert v_j == actual[str(key)][inner_key][i][j]
+                else:
+                    for i, v in enumerate( inner_item ):
+                        for j, v_j in enumerate( v ):
+                            npt.assert_allclose(
+                                v_j,
+                                actual[str(key)]['c'][i][j]
+                            )
+
+    ########################################################################
+
+    def test_from_hdf5_jagged_arr_row_datasets( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            1 : {
+                'a': [
+                    np.array([ 1, 2, ]),
+                    np.array([ 1, 2, 3, 4 ]),
+                ],
+                'b': [
+                    np.array([ 'a', 'b', ]),
+                    np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                ],
+                'c': [
+                    [
+                        np.array([ 'a', 'b', ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                        np.array([ 'aa', 'bb', 'cc', 'dd' ]),
+                    ],
+                    [
+                        np.array([ 1, 2, ]),
+                        np.array([ 1, 2, 3, 4 ]),
+                    ],
+                ],
+            },
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_hdf5(
+            self.savefile,
+            attributes = attrs,
+            handle_jagged_arrs = 'row datasets'
+        )
+
+        # Try to load
+        actual, attrs = verdict.Dict.from_hdf5( self.savefile, )
+
+        # Compare
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                if inner_key != 'c':
+                    for i, v in enumerate( inner_item ):
+                        for j, v_j in enumerate( v ):
+                            assert v_j == actual[str(key)][inner_key][i][j]
+                else:
+                    for i, v in enumerate( inner_item ):
+                        for j, v_j in enumerate( v ):
+                            for k, v_k in enumerate( v_j ):
+                                assert v_k == actual[str(key)][inner_key][i][j][k]
+
+########################################################################
+########################################################################
+
+class TestDictFromDefaultsAndVariations( unittest.TestCase ):
+
+    def test_default( self ):
+
+        defaults = { 'best cat' : 'Melvulu', }
+        variations = {
+            'person a' : { 'other best cat' : 'Chellbrat', },
+            'person b' : {
+                'best cat' : 'A Normal Melville Cat',
+                'other best cat' : 'Chellcat',
+            },
+        }
+
+        actual = verdict.dict_from_defaults_and_variations( defaults, variations )
+        expected = {
+            'person a' : {
+                'best cat' : 'Melvulu',
+                'other best cat' : 'Chellbrat',
+            },
+            'person b' : {
+                'best cat' : 'A Normal Melville Cat',
+                'other best cat' : 'Chellcat',
+            },
+        }
+
+        for key in expected.keys():
+            assert expected[key] == actual[key]
+
+########################################################################
+########################################################################
+
+class TestExternalCompatibility( unittest.TestCase ):
+
+    def test_deepcopy( self ):
+
+        # Setup
+        d = { 'a' : 1, 'b' : 2 }
+        ex = verdict.Dict( d )
+
+        ac = copy.deepcopy( ex )
+
+        assert ex == ac
