@@ -24,3 +24,6 @@ def test_multiply():
     actual = d*2
     assert actual == expected
 
+    actual = 2*d
+    assert actual == expected
+
