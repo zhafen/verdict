@@ -122,4 +122,5 @@ class Dict( collections.Mapping ):
 
         return Dict( results )
 
+    __rmul__ = __mul__
 
