@@ -943,3 +943,282 @@ def dict_from_defaults_and_variations( defaults, variations ):
 
     return result
 
+########################################################################
+
+def create_dataset_fixed( f, path, data, attrs=None ):
+    '''Accounts for h5py not recognizing unicode. This is fixed
+    in h5py 2.9.0, with PR #1032 (not merged at the time of writing).
+    The fix used here is exactly what the PR does.'''
+
+    try:
+        f.create_dataset( path, data=data )
+    except TypeError:
+        data = np.array(
+            data,
+            dtype=h5py.special_dtype( vlen=six.text_type ),
+        )
+        f.create_dataset( path, data=data )
+
+    if attrs is not None:
+        for key, item in attrs.items():
+            try:
+                f[path].attrs[key] = item
+            except TypeError:
+                item = np.array(
+                    item,
+                    dtype=h5py.special_dtype( vlen=six.text_type ),
+                )
+                f[path].attrs[key] = item
+
+########################################################################
+
+def check_if_jagged_arr( arr ):
+    '''Check if an array-like object is contains arrays of
+    different sizes.
+
+    Args:
+        arr: Object to check.
+
+    Returns:
+        bool:
+            True if an array-like object with arrays of different sizes.
+    '''
+
+    # Check if an array-like
+    try:
+        len_arr = len( arr )
+    except TypeError:
+        return False
+
+    if len_arr > 1:
+
+        for i, arr_i in enumerate( arr ):
+
+            # Check if an array
+            if is_array_like( arr_i ):
+                l_current = len( arr_i )
+            else:
+                l_current = 0
+
+            # Check if jagged
+            if i != 0:
+                if l_current != l_prev:
+                    return True
+            l_prev = copy.copy( l_current )
+
+            # Recurse
+            if check_if_jagged_arr( arr_i ): 
+                return True
+
+        # If got to this point, then it's even
+        return False
+
+########################################################################
+
+def create_dataset_jagged_arr(
+        f,
+        current_path,
+        arr,
+        method = 'filled array',
+        fill_value = None,
+        jagged_flag = 'jagged',
+    ):
+    '''Create a dataset for saving an jagged array.
+
+    Args:
+        f (open hdf5 file):
+            File to create the dataset on.
+
+        current_path (str):
+            Location in the file to save the array to.
+
+        arr (array-like):
+            Uneven array to save.
+
+        fill_value :
+            Fill value to use when using the filled arr method.
+
+        jagged_flag (str):
+            Flag to indicate that this part of the hdf5 file contains part of
+            an jagged array-like.
+    '''
+
+    if method == 'filled array':
+
+        filled_arr, fill_value = jagged_arr_to_filled_arr( arr, fill_value )
+
+        attrs = {
+            'jagged saved as filled': True,
+            'fill value': fill_value
+        }
+        create_dataset_fixed( f, current_path, filled_arr, attrs=attrs )
+
+    elif method == 'row datasets':
+        for i, v in enumerate( arr ):
+
+            used_path = '{}/{}{}'.format( current_path, jagged_flag, i )
+
+            # If v is an jagged array, recurse
+            if check_if_jagged_arr( v ):
+                create_dataset_jagged_arr(
+                    f,
+                    used_path,
+                    v,
+                    method = method,
+                    jagged_flag = jagged_flag,
+                )
+            else:
+                create_dataset_fixed( f, used_path, v )
+
+    else:
+        raise ValueError( 'Unrecognized jagged arr dataset method, {}'.format( method ) )
+
+########################################################################
+
+def jagged_arr_to_filled_arr( arr, fill_value=None, dtype=None, ):
+    '''Convert a jagged array to a uniform filled array of minimum size
+    needed to contain all the data.
+
+    Args:
+        arr (array-like):
+            Jagged array to convert to a filled array.
+
+        fill_value:
+            Fill value to use. Defaults to -9999 for integers, NaN otherwise.
+
+        dtype:
+            Datatype. Defaults to the datatype of arr, if arr consists of data
+            of one type.
+
+    Returns:
+        np n-dim array:
+            A filled array with minimum dimensions needed to contain arr.
+    '''
+
+    def arr_depth( a, level=1 ):
+        '''Get the array depth, even for a jagged array.'''
+
+        if len( a ) == 0:
+            return level
+
+        depths = []
+        for v in a:
+            if is_array_like( v ):
+                depths.append( arr_depth( v, level+1 ) )
+            else:
+                depths.append( level )
+
+        return max( depths )
+
+    def recursive_array_shape( a, s=[], dtypes=[], level=0 ):
+        '''Loop through and get max dimensions and datatypes of jagged array'''
+
+        # Get length at current depth
+        len_depth = np.array( a ).shape[0]
+
+        # Compare to s
+        if len( s ) > level:
+            s[level] = max( s[level], len_depth )
+        else:
+            s.append( len_depth )
+
+        # Recurse
+        for v in a:
+            if not is_array_like( v ):
+                if type( v ) not in dtypes:
+                    if isinstance( v, str ):
+                        dtype = len( v )
+                    else:
+                        dtype = type( v )
+                    dtypes.append( dtype )
+                continue
+            s, dtypes = recursive_array_shape( v, s, dtypes, level+1 )
+
+        return s, dtypes
+            
+    shape, dtypes = recursive_array_shape( arr )
+
+    # The two sections below are somewhat complicated as a result of these:
+    # a) The full length of all strings must be saved.
+    # b) Passing dtype to np.full can result in unexpected behavior.
+    # c) np.dtype( int ).type( np.nan ) is overly long and complicated.
+
+    # Choose array type
+    str_dtype = not False in [ isinstance( _, int ) for _ in dtypes ]
+    if str_dtype:
+        # The + [3,] gives a minimum length
+        dtype = '<U{}'.format( max( dtypes+[ 3, ] ) )
+    elif len( dtypes ) > 1 and dtype is None:
+        raise TypeError( 'Must choose dtype for jagged arrays with multiple data types.' )
+    else:
+        dtype = dtypes[0]
+
+    # Choose automatic fill value
+    if fill_value is None:
+        if str_dtype:
+            arr_dtype = dtype
+            fill_value = np.nan
+        else:
+            arr_dtype = np.float64
+            try:
+                fill_value = dtype( np.nan )
+            except ValueError:
+                fill_value = dtype( -9999 )
+    else:
+        arr_dtype = type( fill_value )
+
+    new_arr = np.full( shape, fill_value, dtype=arr_dtype )
+
+    def store_jagged_to_masked( a, m_a, ):
+        '''Actually store the jagged array to the masked array.'''
+
+        if arr_depth( a ) == 2:
+            for i, v in enumerate( a ):
+                m_a[i,:len(v)] = v
+            return m_a
+        else:
+            for i, v in enumerate( a ):
+                m_a[i] = store_jagged_to_masked( v, m_a[i] )
+
+        return m_a
+
+    new_arr = store_jagged_to_masked( arr, new_arr )
+
+    return new_arr, fill_value
+
+########################################################################
+
+def filled_arr_to_jagged_arr( arr, fill_value ):
+    '''Convert a filled array to a jagged array
+
+    Args:
+        arr (np.ndarray):
+            Array to convert to a jagged set of lists.
+
+        fill_value:
+            Value to skip over.
+
+    Returns:
+        A list of lists instead of a filled array.
+    '''
+
+    result = []
+    for v in arr:
+        if is_array_like( v ):
+            result.append( filled_arr_to_jagged_arr( v, fill_value ) )
+        else:
+            if isinstance( v, str ):
+                if v == fill_value:
+                    continue
+            else:
+                if np.isclose( v, fill_value ):
+                    continue
+            result.append( v )
+
+    return result
+
+########################################################################
+
+def is_array_like( a ):
+    '''Check if something is array-like.'''
+    return hasattr( a, '__len__' ) and not isinstance( a, str )
