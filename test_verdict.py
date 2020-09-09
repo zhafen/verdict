@@ -27,3 +27,18 @@ def test_multiply():
     actual = 2*d
     assert actual == expected
 
+########################################################################
+
+def test_multiply_verdict_dict():
+
+    d1 = verdict.Dict( { 1 : 1, 2 : 2 } )
+    d2 = verdict.Dict( { 1 : 2, 2 : 3 } )
+
+    expected = { 1 : 2, 2 : 6, }
+
+    actual = d1*d2
+    assert actual == expected
+
+    actual = d2*d1
+    assert actual == expected
+
