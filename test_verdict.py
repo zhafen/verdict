@@ -15,6 +15,110 @@ import verdict
 ########################################################################
 ########################################################################
 
+class TestVerDictStartup( unittest.TestCase ):
+
+    def test_default( self ):
+
+        d = { 'a' : 1, 'b' : 2 }
+
+        verdict_dict = verdict.Dict( d )
+
+        self.assertEqual( verdict_dict['b'], 2 )
+        self.assertEqual( len( verdict_dict ), 2 )
+
+    ########################################################################
+
+    def test_nested( self ):
+
+        orig = {
+            'A' : {
+                'i' : {
+                    1 : {
+                        'a': 1.,
+                        'b': 3.,
+                    },
+                    2 : {
+                        'a': 5.,
+                        'b': 7.,
+                    },
+                },
+                'ii' : {
+                    1 : {
+                        'a': 10.,
+                        'b': 30.,
+                    },
+                    2 : {
+                        'a': 50.,
+                        'b': 70.,
+                    },
+                },
+            },
+            'B' : {
+                'i' : {
+                    1 : {
+                        'a': 2.,
+                        'b': 4.,
+                    },
+                    2 : {
+                        'a': 6.,
+                        'b': 8.,
+                    },
+                },
+                'ii' : {
+                    1 : {
+                        'a': 11.,
+                        'b': 31.,
+                    },
+                    2 : {
+                        'a': 51.,
+                        'b': 71.,
+                    },
+                },
+            },
+        }
+
+        d = verdict.Dict( orig )
+
+        for key, item in d.items():
+            assert isinstance( item, verdict.Dict )
+            for i_key, i_item in item.items():
+                    assert isinstance( i_item, verdict.Dict )
+                    for ii_key, ii_item in i_item.items():
+                        assert isinstance( i_item, verdict.Dict )
+                        for iii_key, iii_item in ii_item.items():
+                            self.assertEqual(
+                                orig[key][i_key][ii_key][iii_key],
+                                d[key][i_key][ii_key][iii_key],
+                            )
+
+
+    ########################################################################
+
+    def test_from_defaults_and_variations( self ):
+
+        class TestClassA( object ):
+            def __init__( self, a, b ):
+                self.a = a
+                self.b = b
+            def return_contents( self ):
+                return self.a, self.b
+
+        defaults = { 'a' : 1, 'b' : 1 }
+        variations = {
+            1 : {},
+            2 : { 'b' : 2 },
+        }
+
+        result = verdict.Dict.from_class_and_args( TestClassA, variations, defaults, )
+
+        assert isinstance( result, verdict.Dict )
+
+        expected = { 1 : ( 1, 1, ), 2 : ( 1, 2, ), }
+        actual = result.return_contents()
+        assert expected == actual
+
+########################################################################
+
 class TestVerDict( unittest.TestCase ):
 
     def test_nested( self ):
