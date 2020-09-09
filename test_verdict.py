@@ -15,410 +15,412 @@ import verdict
 ########################################################################
 ########################################################################
 
-def test_nested():
+class TestVerDict( unittest.TestCase ):
 
-    class TestClassA( object ):
-        def __init__( self, key ):
-            self.foo = 1234
-            self.key = key
-    class TestClassB( object ):
-        def __init__( self, key ):
-            self.test_class_a = TestClassA( key )
-            self.key = key
+    def test_nested( self ):
 
-    d = {}
-    expected = {}
-    expected2 = {}
-    for i in range( 3 ):
-        d[i] = TestClassB( i )
-        expected[i] = 1234
-        expected2[i] = i
+        class TestClassA( object ):
+            def __init__( self, key ):
+                self.foo = 1234
+                self.key = key
+        class TestClassB( object ):
+            def __init__( self, key ):
+                self.test_class_a = TestClassA( key )
+                self.key = key
 
-    smart_d = verdict.Dict( d )
+        d = {}
+        expected = {}
+        expected2 = {}
+        for i in range( 3 ):
+            d[i] = TestClassB( i )
+            expected[i] = 1234
+            expected2[i] = i
 
-    actual = smart_d.test_class_a.foo
-    assert actual == expected
+        smart_d = verdict.Dict( d )
 
-    actual = smart_d.key
-    assert actual == expected2
+        actual = smart_d.test_class_a.foo
+        self.assertEqual( expected, actual )
 
-    actual = smart_d.test_class_a.key
-    assert actual == expected2
+        actual = smart_d.key
+        self.assertEqual( expected2, actual )
 
-########################################################################
+        actual = smart_d.test_class_a.key
+        self.assertEqual( expected2, actual )
 
-def test_nested_method():
+    ########################################################################
 
-    class TestClassA( object ):
-        def foo( self, x ):
-            return x**2
-    class TestClassB( object ):
-        def __init__():
-            self.test_class_a = TestClassA()
+    def test_nested_method( self ):
 
-    d = {}
-    expected = {}
-    for i in range( 3 ):
-        d[i] = TestClassB()
-        expected[i] = 4
+        class TestClassA( object ):
+            def foo( self, x ):
+                return x**2
+        class TestClassB( object ):
+            def __init__( self ):
+                self.test_class_a = TestClassA()
 
-    smart_d = verdict.Dict( d )
+        d = {}
+        expected = {}
+        for i in range( 3 ):
+            d[i] = TestClassB()
+            expected[i] = 4
 
-    actual = smart_d.test_class_a.foo( 2 )
+        smart_d = verdict.Dict( d )
 
-    assert actual == expected
+        actual = smart_d.test_class_a.foo( 2 )
 
-########################################################################
+        self.assertEqual( expected, actual )
 
-def test_depth():
-    '''Depth of the Dict.
-    '''
+    ########################################################################
 
-    d = verdict.Dict( {
-        'A' : verdict.Dict( {
-            'i' : verdict.Dict( {
-                1 : verdict.Dict( {
-                    'a': 1.,
-                    'b': 3.,
+    def test_depth( self ):
+        '''Depth of the Dict.
+        '''
+
+        d = verdict.Dict( {
+            'A' : verdict.Dict( {
+                'i' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 1.,
+                        'b': 3.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 5.,
+                        'b': 7.,
+                    } ),
                 } ),
-                2 : verdict.Dict( {
-                    'a': 5.,
-                    'b': 7.,
-                } ),
-            } ),
-            'ii' : verdict.Dict( {
-                1 : verdict.Dict( {
-                    'a': 10.,
-                    'b': 30.,
-                } ),
-                2 : verdict.Dict( {
-                    'a': 50.,
-                    'b': 70.,
-                } ),
-            } ),
-        } ),
-        'B' : verdict.Dict( {
-            'i' : verdict.Dict( {
-                1 : verdict.Dict( {
-                    'a': 2.,
-                    'b': 4.,
-                } ),
-                2 : verdict.Dict( {
-                    'a': 6.,
-                    'b': 8.,
+                'ii' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 10.,
+                        'b': 30.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 50.,
+                        'b': 70.,
+                    } ),
                 } ),
             } ),
-            'ii' : verdict.Dict( {
-                1 : verdict.Dict( {
-                    'a': 11.,
-                    'b': 31.,
+            'B' : verdict.Dict( {
+                'i' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 2.,
+                        'b': 4.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 6.,
+                        'b': 8.,
+                    } ),
                 } ),
-                2 : verdict.Dict( {
-                    'a': 51.,
-                    'b': 71.,
+                'ii' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 11.,
+                        'b': 31.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 51.,
+                        'b': 71.,
+                    } ),
                 } ),
             } ),
-        } ),
-    } )
+        } )
 
-    assert d.depth() == 4
+        assert d.depth() == 4
 
-########################################################################
+    ########################################################################
 
-def test_getitem_split():
+    def test_getitem_split( self ):
 
-    d = verdict.Dict({
-        'a/b': 1,
-        'a' : { 'c': 2 },
-        'b' : { 'c': { 'd': 3 } },
-    })
+        d = verdict.Dict({
+            'a/b': 1,
+            'a' : { 'c': 2 },
+            'b' : { 'c': { 'd': 3 } },
+        })
 
-    assert d['a/b'] == 1
-    assert d['a/c'] == 2
-    assert d['b/c/d'] == 3
+        assert d['a/b'] == 1
+        assert d['a/c'] == 2
+        assert d['b/c/d'] == 3
 
-def test_call_custom_kwargs():
+    def test_call_custom_kwargs( self ):
 
-    class TestClassA( object ):
-        def foo( self, x ):
-            return x**2
+        class TestClassA( object ):
+            def foo( self, x ):
+                return x**2
 
-    d = verdict.Dict( { 1 : TestClassA(), 2 : TestClassA(), } )
+        d = verdict.Dict( { 1 : TestClassA(), 2 : TestClassA(), } )
 
-    kwargs = { 1 : { 'x' : 10}, 2 : { 'x' : 100}, }
-    actual = d.foo.call_custom_kwargs( kwargs )
-    expected = { 1 : 100, 2 : 10000, }
-    assert actual == expected
+        kwargs = { 1 : { 'x' : 10}, 2 : { 'x' : 100}, }
+        actual = d.foo.call_custom_kwargs( kwargs )
+        expected = { 1 : 100, 2 : 10000, }
+        self.assertEqual( expected, actual )
 
-########################################################################
+    ########################################################################
 
-def test_call_iteratively():
+    def test_call_iteratively( self ):
 
-    class TestClassA( object ):
-        def foo( self, x ):
-            return x**2
+        class TestClassA( object ):
+            def foo( self, x ):
+                return x**2
 
-    d = verdict.Dict( { 1 : TestClassA(), 2 : TestClassA(), } )
+        d = verdict.Dict( { 1 : TestClassA(), 2 : TestClassA(), } )
 
-    actual = d.foo.call_iteratively( [ 1, 2, ] )
-    expected = { 1 : [1, 4,], 2 : [1, 4, ] }
-    assert actual == expected
+        actual = d.foo.call_iteratively( [ 1, 2, ] )
+        expected = { 1 : [1, 4,], 2 : [1, 4, ] }
+        self.assertEqual( expected, actual )
 
-########################################################################
+    ########################################################################
 
-def test_multiply():
+    def test_multiply( self ):
 
-    d = verdict.Dict( { 1 : 1, 2 : 2 } )
+        d = verdict.Dict( { 1 : 1, 2 : 2 } )
 
-    expected = { 1 : 2, 2 : 4, }
+        expected = { 1 : 2, 2 : 4, }
 
-    actual = d*2
-    assert actual == expected
+        actual = d*2
+        self.assertEqual( expected, actual )
 
-    actual = 2*d
-    assert actual == expected
+        actual = 2*d
+        self.assertEqual( expected, actual )
 
-########################################################################
+    ########################################################################
 
-def test_multiply_verdict_dict():
+    def test_multiply_verdict_dict( self ):
 
-    d1 = verdict.Dict( { 1 : 1, 2 : 2 } )
-    d2 = verdict.Dict( { 1 : 2, 2 : 3 } )
+        d1 = verdict.Dict( { 1 : 1, 2 : 2 } )
+        d2 = verdict.Dict( { 1 : 2, 2 : 3 } )
 
-    expected = { 1 : 2, 2 : 6, }
+        expected = { 1 : 2, 2 : 6, }
 
-    actual = d1*d2
-    assert actual == expected
+        actual = d1*d2
+        self.assertEqual( expected, actual )
 
-    actual = d2*d1
-    assert actual == expected
+        actual = d2*d1
+        self.assertEqual( expected, actual )
 
-########################################################################
+    ########################################################################
 
-def test_divide():
+    def test_divide( self ):
 
-    d = verdict.Dict( { 1 : 2, 2 : 4 } )
-    expected = { 1 : 1.0, 2 : 2.0, }
-    actual = d/2
-    assert actual == expected
+        d = verdict.Dict( { 1 : 2, 2 : 4 } )
+        expected = { 1 : 1.0, 2 : 2.0, }
+        actual = d/2
+        self.assertEqual( expected, actual )
 
-    d = verdict.Dict( { 1 : 2, 2 : 4 } )
-    expected = { 1 : 2, 2 : 1, }
-    actual = 4 // d
-    assert actual == expected
+        d = verdict.Dict( { 1 : 2, 2 : 4 } )
+        expected = { 1 : 2, 2 : 1, }
+        actual = 4 // d
+        self.assertEqual( expected, actual )
 
-########################################################################
+    ########################################################################
 
-def test_divide_verdict_dict():
+    def test_divide_verdict_dict( self ):
 
-    d1 = verdict.Dict( { 1 : 9, 2 : 4 } )
-    d2 = verdict.Dict( { 1 : 3, 2 : 2 } )
+        d1 = verdict.Dict( { 1 : 9, 2 : 4 } )
+        d2 = verdict.Dict( { 1 : 3, 2 : 2 } )
 
-    expected = { 1 : 3, 2 : 2, }
+        expected = { 1 : 3, 2 : 2, }
 
-    actual = d1/d2
-    assert actual == expected
+        actual = d1/d2
+        self.assertEqual( expected, actual )
 
-########################################################################
+    ########################################################################
 
-def test_add():
+    def test_add( self ):
 
-    d = verdict.Dict( { 1 : 1, 2 : 2 } )
-    expected = { 1 : 2, 2 : 3, }
-    actual = d + 1
-    assert actual == expected
+        d = verdict.Dict( { 1 : 1, 2 : 2 } )
+        expected = { 1 : 2, 2 : 3, }
+        actual = d + 1
+        self.assertEqual( expected, actual )
 
-    d = verdict.Dict( { 1 : 1, 2 : 2 } )
-    expected = { 1 : 2, 2 : 3, }
-    actual = 1 + d
-    assert actual == expected
+        d = verdict.Dict( { 1 : 1, 2 : 2 } )
+        expected = { 1 : 2, 2 : 3, }
+        actual = 1 + d
+        self.assertEqual( expected, actual )
 
-########################################################################
+    ########################################################################
 
-def test_add_verdict_dict():
+    def test_add_verdict_dict( self ):
 
-    d1 = verdict.Dict( { 1 : 9, 2 : 4 } )
-    d2 = verdict.Dict( { 1 : 3, 2 : 2 } )
+        d1 = verdict.Dict( { 1 : 9, 2 : 4 } )
+        d2 = verdict.Dict( { 1 : 3, 2 : 2 } )
 
-    expected = { 1 : 12, 2 : 6, }
+        expected = { 1 : 12, 2 : 6, }
 
-    actual = d1 + d2
-    assert actual == expected
+        actual = d1 + d2
+        self.assertEqual( expected, actual )
 
-########################################################################
+    ########################################################################
 
-def test_subtract():
+    def test_subtract( self ):
 
-    d = verdict.Dict( { 1 : 1, 2 : 2 } )
-    expected = { 1 : 0, 2 : 1, }
-    actual = d - 1
-    assert actual == expected
+        d = verdict.Dict( { 1 : 1, 2 : 2 } )
+        expected = { 1 : 0, 2 : 1, }
+        actual = d - 1
+        self.assertEqual( expected, actual )
 
-    d = verdict.Dict( { 1 : 1, 2 : 2 } )
-    expected = { 1 : 0, 2 : -1, }
-    actual = 1 - d
-    assert actual == expected
+        d = verdict.Dict( { 1 : 1, 2 : 2 } )
+        expected = { 1 : 0, 2 : -1, }
+        actual = 1 - d
+        self.assertEqual( expected, actual )
 
-########################################################################
+    ########################################################################
 
-def test_subtract_verdict_dict():
+    def test_subtract_verdict_dict( self ):
 
-    d1 = verdict.Dict( { 1 : 9, 2 : 4 } )
-    d2 = verdict.Dict( { 1 : 3, 2 : 2 } )
+        d1 = verdict.Dict( { 1 : 9, 2 : 4 } )
+        d2 = verdict.Dict( { 1 : 3, 2 : 2 } )
 
-    expected = { 1 : 6, 2 : 2, }
+        expected = { 1 : 6, 2 : 2, }
 
-    actual = d1 - d2
-    assert actual == expected
+        actual = d1 - d2
+        self.assertEqual( expected, actual )
 
-########################################################################
+    ########################################################################
 
-def test_sum_contents():
+    def test_sum_contents( self ):
 
-    d1 = verdict.Dict( { 1 : 1, 2 : 2, 3 : 3, } )
+        d1 = verdict.Dict( { 1 : 1, 2 : 2, 3 : 3, } )
 
-    assert 6 == d1.sum_contents()
+        self.assertEqual( 6, d1.sum_contents() )
 
-########################################################################
+    ########################################################################
 
-def test_keymax_and_keymin():
+    def test_keymax_and_keymin( self ):
 
-    d1 = verdict.Dict( { 1 : 1, 2 : 2, 3 : 3, } )
+        d1 = verdict.Dict( { 1 : 1, 2 : 2, 3 : 3, } )
 
-    assert (3, 3) == d1.keymax()
-    assert (1, 1) == d1.keymin()
+        self.assertEqual( (3, 3), d1.keymax() )
+        self.assertEqual( (1, 1), d1.keymin() )
 
-    d1 = verdict.Dict( { 5 : 4, 2 : -1, 3 : 0, } )
+        d1 = verdict.Dict( { 5 : 4, 2 : -1, 3 : 0, } )
 
-    assert (5, 4) == d1.keymax()
-    assert (2, -1) == d1.keymin()
+        self.assertEqual( (5, 4), d1.keymax() )
+        self.assertEqual( (2, -1), d1.keymin() )
 
-########################################################################
+    ########################################################################
 
-def test_transpose():
+    def test_transpose( self ):
 
-    d = verdict.Dict( {
-        'a': { 1: 1, 2: 2, },
-        'b': { 1: 3, 2: 4, },
-    } )
+        d = verdict.Dict( {
+            'a': { 1: 1, 2: 2, },
+            'b': { 1: 3, 2: 4, },
+        } )
 
-    expected = verdict.Dict( {
-        1: { 'a': 1, 'b': 3, },
-        2: { 'a': 2, 'b': 4, },
-    } )
+        expected = verdict.Dict( {
+            1: { 'a': 1, 'b': 3, },
+            2: { 'a': 2, 'b': 4, },
+        } )
 
-    assert d.transpose() == expected
+        self.assertEqual( d.transpose(), expected )
 
-########################################################################
+    ########################################################################
 
-def test_array():
+    def test_array( self ):
 
-    d = verdict.Dict( {
-        'a': 1,
-        'c': 2,
-        'b': 3,
-    } )
-
-    expected = np.array([ 1., 3., 2. ])
-
-    actual = d.array()
-
-    npt.assert_allclose( expected, actual )
-
-########################################################################
-
-def test_to_df():
-
-    d = verdict.Dict( {
-        1 : verdict.Dict( {
+        d = verdict.Dict( {
             'a': 1,
-            'b': 2,
-        } ),
-        2 : verdict.Dict( {
-            'a': 3,
-            'b': 4,
-        } ),
-    } )
+            'c': 2,
+            'b': 3,
+        } )
 
-    expected = pd.DataFrame( {
-        'name': [ 'a', 'b' ],
-        1: [ 1, 2, ],
-        2: [ 3, 4, ],
-    } )
-    expected.set_index( 'name', inplace=True )
+        expected = np.array([ 1., 3., 2. ])
 
-    actual = d.to_df()
+        actual = d.array()
 
-    assert actual.equals( expected )
+        npt.assert_allclose( expected, actual )
 
-########################################################################
+    ########################################################################
 
-def test_to_df_nested():
-    '''Test that converting to a DF for nested Dicts only converts the
-    innermost.
-    '''
+    def test_to_df( self ):
 
-    d = verdict.Dict( {
-        'A' : verdict.Dict( {
-            'i' : verdict.Dict( {
-                1 : verdict.Dict( {
-                    'a': 1.,
-                    'b': 3.,
+        d = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': 1,
+                'b': 2,
+            } ),
+            2 : verdict.Dict( {
+                'a': 3,
+                'b': 4,
+            } ),
+        } )
+
+        expected = pd.DataFrame( {
+            'name': [ 'a', 'b' ],
+            1: [ 1, 2, ],
+            2: [ 3, 4, ],
+        } )
+        expected.set_index( 'name', inplace=True )
+
+        actual = d.to_df()
+
+        assert actual.equals( expected )
+
+    ########################################################################
+
+    def test_to_df_nested( self ):
+        '''Test that converting to a DF for nested Dicts only converts the
+        innermost.
+        '''
+
+        d = verdict.Dict( {
+            'A' : verdict.Dict( {
+                'i' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 1.,
+                        'b': 3.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 5.,
+                        'b': 7.,
+                    } ),
                 } ),
-                2 : verdict.Dict( {
-                    'a': 5.,
-                    'b': 7.,
+                'ii' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 10.,
+                        'b': 30.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 50.,
+                        'b': 70.,
+                    } ),
                 } ),
             } ),
-            'ii' : verdict.Dict( {
-                1 : verdict.Dict( {
-                    'a': 10.,
-                    'b': 30.,
+            'B' : verdict.Dict( {
+                'i' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 2.,
+                        'b': 4.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 6.,
+                        'b': 8.,
+                    } ),
                 } ),
-                2 : verdict.Dict( {
-                    'a': 50.,
-                    'b': 70.,
-                } ),
-            } ),
-        } ),
-        'B' : verdict.Dict( {
-            'i' : verdict.Dict( {
-                1 : verdict.Dict( {
-                    'a': 2.,
-                    'b': 4.,
-                } ),
-                2 : verdict.Dict( {
-                    'a': 6.,
-                    'b': 8.,
-                } ),
-            } ),
-            'ii' : verdict.Dict( {
-                1 : verdict.Dict( {
-                    'a': 11.,
-                    'b': 31.,
-                } ),
-                2 : verdict.Dict( {
-                    'a': 51.,
-                    'b': 71.,
+                'ii' : verdict.Dict( {
+                    1 : verdict.Dict( {
+                        'a': 11.,
+                        'b': 31.,
+                    } ),
+                    2 : verdict.Dict( {
+                        'a': 51.,
+                        'b': 71.,
+                    } ),
                 } ),
             } ),
-        } ),
-    } )
+        } )
 
-    expected = verdict.Dict( {
-        'A' : verdict.Dict( {
-            'i' : d['A']['i'].to_df(),
-            'ii' : d['A']['ii'].to_df(),
-        } ),
-        'B' : verdict.Dict( {
-            'i' : d['B']['i'].to_df(),
-            'ii' : d['B']['ii'].to_df(),
-        } ),
-    } )
+        expected = verdict.Dict( {
+            'A' : verdict.Dict( {
+                'i' : d['A']['i'].to_df(),
+                'ii' : d['A']['ii'].to_df(),
+            } ),
+            'B' : verdict.Dict( {
+                'i' : d['B']['i'].to_df(),
+                'ii' : d['B']['ii'].to_df(),
+            } ),
+        } )
 
-    actual = d.to_df()
+        actual = d.to_df()
 
-    for key, item in expected.items():
-        for i_key, i_item in item.items():
-            assert i_item.equals( actual[key][i_key] )
+        for key, item in expected.items():
+            for i_key, i_item in item.items():
+                assert i_item.equals( actual[key][i_key] )
 
