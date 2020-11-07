@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="verdict",
-    version="1.1.3",
+    version="1.1.4",
     author="Zach Hafen",
     author_email="zachary.h.hafen@gmail.com",
     description="A version of Python's dictionary with additional features",
