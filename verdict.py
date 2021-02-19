@@ -583,6 +583,7 @@ class Dict( collections.Mapping ):
         overwrite_existing_file = True,
         condensed = False,
         handle_jagged_arrs = 'filled array',
+        jagged_flag = 'jagged',
     ):
         '''Save the contents as a HDF5 file.
 
@@ -609,6 +610,10 @@ class Dict( collections.Mapping ):
                         any jagged arrays.
                     row datasets:
                         Save each row of a jagged array as a separate dataset.
+
+            jagged_flag (str):
+                Flag to indicate that this part of the hdf5 file contains part of
+                an jagged array-like.
         '''
 
         # Make sure all contained dictionaries are verdict Dicts
@@ -688,7 +693,8 @@ class Dict( collections.Mapping ):
                         f,
                         current_path,
                         item,
-                        method = handle_jagged_arrs
+                        method = handle_jagged_arrs,
+                        jagged_flag = jagged_flag,
                     )
                 else:
                     create_dataset_fixed( f, current_path, item )
@@ -729,6 +735,7 @@ class Dict( collections.Mapping ):
         unpack = False,
         unpack_name = 'name',
         look_for_saved_jagged_arrs = True,
+        jagged_flag = 'jagged',
     ):
         '''Load a HDF5 file as a verdict Dict.
 
@@ -744,6 +751,10 @@ class Dict( collections.Mapping ):
                 If True and the inner-most groups are combined into a condensed
                 DataFrame/array-like format, unpack them into a traditional
                 structure.
+
+        jagged_flag (str):
+            Flag to indicate that this part of the hdf5 file contains part of
+            an jagged array-like.
         '''
 
         f = h5py.File( filepath, 'r' )
@@ -793,9 +804,9 @@ class Dict( collections.Mapping ):
 
                     if look_for_saved_jagged_arrs:
                         # Look for saved jagged arrays
-                        if i_key[:6] == 'jagged':
+                        if i_key[:len(jagged_flag)] == jagged_flag:
                             return [
-                                result['jagged{}'.format( i )]
+                                result['{}{}'.format( jagged_flag, i )]
                                 for i in range( len( result ) )
                             ]
 
