@@ -962,6 +962,25 @@ class Dict( collections.Mapping ):
     ########################################################################
 
     @classmethod
+    def from_json(
+        cls,
+        filepath,
+    ):
+        '''Load a HDF5 file as a verdict Dict.
+
+        Args:
+            filepath (str):
+                Location to load the hdf5 file from.
+        '''
+
+        with open( filepath ) as f:
+            data = json.load( f )
+
+        return Dict( data )
+
+    ########################################################################
+
+    @classmethod
     def from_class_and_args( cls, contained_cls, args, default_args={}, ):
         '''Alternate constructor. Creates a Dict of contained_cls objects,
         with arguments passed to it from the dictionary created by

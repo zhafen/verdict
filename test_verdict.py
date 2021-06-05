@@ -1429,6 +1429,38 @@ class TestVerDictJSON( unittest.TestCase ):
 
     ########################################################################
 
+    def test_from_json( self ):
+
+        # Create test data
+        expected = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': np.array([ 1., 2. ]),
+                'b': np.array([ 3., 4. ]),
+            } ),
+            2 : verdict.Dict( {
+                'a': np.array([ 5., 6. ]),
+                'b': np.array([ 7., 8. ]),
+            } ),
+        } )
+        attrs = { 'x': 1.5 }
+        expected.to_json( self.savefile, **self.kwargs )
+
+        # Try to load
+        actual = verdict.Dict.from_json(
+            self.savefile,
+            **self.kwargs
+        )
+
+        # Compare
+        with open( self.savefile ) as f:
+            actual = json.load(f)
+        for key, item in actual.items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    actual[str(key)][inner_key],
+                )
+
 ########################################################################
 ########################################################################
 
