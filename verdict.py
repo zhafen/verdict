@@ -8,6 +8,7 @@
 
 import copy
 import h5py
+import h5sparse
 import numpy as np
 import os
 import pandas as pd
@@ -590,6 +591,7 @@ class Dict( collections.Mapping ):
         condensed = False,
         handle_jagged_arrs = 'filled array',
         jagged_flag = 'jagged',
+        sparse = False,
     ):
         '''Save the contents as a HDF5 file.
 
@@ -622,6 +624,12 @@ class Dict( collections.Mapping ):
                 an jagged array-like.
         '''
 
+        # If using sparse matrices
+        if sparse:
+            hdf5_module = h5sparse
+        else:
+            hdf5_module = h5py
+
         # Make sure all contained dictionaries are verdict Dicts
         self = Dict( self )
 
@@ -635,7 +643,7 @@ class Dict( collections.Mapping ):
             exist_ok = True
         )
 
-        f = h5py.File( filepath, 'w-' )
+        f = hdf5_module.File( filepath, 'w-' )
 
         # Store attributes
         if attributes is not None:
@@ -701,9 +709,10 @@ class Dict( collections.Mapping ):
                         item,
                         method = handle_jagged_arrs,
                         jagged_flag = jagged_flag,
+                        hdf5_module = hdf5_module,
                     )
                 else:
-                    create_dataset_fixed( f, current_path, item )
+                    create_dataset_fixed( f, current_path, item, hdf5_module=hdf5_module )
 
         # Shallow dictionary condensed edge case
         shallow_condensed_save = ( self.depth() <= 2 ) and condensed
@@ -742,6 +751,7 @@ class Dict( collections.Mapping ):
         unpack_name = 'name',
         look_for_saved_jagged_arrs = True,
         jagged_flag = 'jagged',
+        sparse = False,
     ):
         '''Load a HDF5 file as a verdict Dict.
 
@@ -763,7 +773,13 @@ class Dict( collections.Mapping ):
             an jagged array-like.
         '''
 
-        f = h5py.File( filepath, 'r' )
+        # If using sparse matrices
+        if sparse:
+            hdf5_module = h5sparse
+        else:
+            hdf5_module = h5py
+
+        f = hdf5_module.File( filepath, 'r' )
 
         def recursive_retrieve( current_path, key ):
             '''Function for recursively loading from an hdf5 file.
@@ -781,7 +797,7 @@ class Dict( collections.Mapping ):
 
             item = f[current_path]
 
-            if isinstance( item, h5py.Group ):
+            if isinstance( item, hdf5_module.Group ):
 
                 group = f[current_path]
                 result = {}
@@ -818,7 +834,7 @@ class Dict( collections.Mapping ):
 
                     return Dict( result )
 
-            elif isinstance( item, h5py.Dataset ):
+            elif isinstance( item, hdf5_module.Dataset ) or isinstance( item, h5py.Dataset ):
                 arr = np.array( item[...] )
 
                 if look_for_saved_jagged_arrs:
@@ -962,17 +978,22 @@ def dict_from_defaults_and_variations( defaults, variations ):
 
 ########################################################################
 
-def create_dataset_fixed( f, path, data, attrs=None ):
+def create_dataset_fixed( f, path, data, hdf5_module, attrs=None ):
     '''Accounts for h5py not recognizing unicode. This is fixed
     in h5py 2.9.0, with PR #1032 (not merged at the time of writing).
     The fix used here is exactly what the PR does.'''
+
+    try:
+        special_dtype = hdf5_module.special_dtype( vlen=six.text_type )
+    except AttributeError:
+        special_dtype = h5py.special_dtype( vlen=six.text_type )
 
     try:
         f.create_dataset( path, data=data )
     except TypeError:
         data = np.array(
             data,
-            dtype=h5py.special_dtype( vlen=six.text_type ),
+            dtype=special_dtype,
         )
         f.create_dataset( path, data=data )
 
@@ -983,7 +1004,7 @@ def create_dataset_fixed( f, path, data, attrs=None ):
             except TypeError:
                 item = np.array(
                     item,
-                    dtype=h5py.special_dtype( vlen=six.text_type ),
+                    dtype=special_dtype,
                 )
                 f[path].attrs[key] = item
 
@@ -1039,6 +1060,7 @@ def create_dataset_jagged_arr(
         method = 'filled array',
         fill_value = None,
         jagged_flag = 'jagged',
+        hdf5_module = h5py,
     ):
     '''Create a dataset for saving an jagged array.
 
@@ -1068,7 +1090,7 @@ def create_dataset_jagged_arr(
             'jagged saved as filled': True,
             'fill value': fill_value
         }
-        create_dataset_fixed( f, current_path, filled_arr, attrs=attrs )
+        create_dataset_fixed( f, current_path, filled_arr, hdf5_module, attrs=attrs )
 
     elif method == 'row datasets':
         for i, v in enumerate( arr ):
@@ -1083,9 +1105,10 @@ def create_dataset_jagged_arr(
                     v,
                     method = method,
                     jagged_flag = jagged_flag,
+                    hdf5_module = hdf5_module,
                 )
             else:
-                create_dataset_fixed( f, used_path, v )
+                create_dataset_fixed( f, used_path, v, hdf5_module )
 
     else:
         raise ValueError( 'Unrecognized jagged arr dataset method, {}'.format( method ) )

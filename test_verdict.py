@@ -535,6 +535,7 @@ class TestVerDictHDF5( unittest.TestCase ):
     def setUp( self ):
 
         self.savefile = 'to_hdf5_test.hdf5'
+        self.kwargs = {}
 
     def tearDown( self ):
 
@@ -560,7 +561,7 @@ class TestVerDictHDF5( unittest.TestCase ):
         attrs = { 'x' : 1.5, }
 
         # Try to save
-        d.to_hdf5( self.savefile, attributes=attrs )
+        d.to_hdf5( self.savefile, attributes=attrs, **self.kwargs )
 
         # Compare
         f = h5py.File( self.savefile, 'r' )
@@ -603,7 +604,7 @@ class TestVerDictHDF5( unittest.TestCase ):
         } )
 
         # Try to save
-        d.to_hdf5( self.savefile )
+        d.to_hdf5( self.savefile, **self.kwargs )
 
         # Compare
         f = h5py.File( self.savefile, 'r' )
@@ -646,7 +647,7 @@ class TestVerDictHDF5( unittest.TestCase ):
         } )
 
         # Try to save
-        d.to_hdf5( self.savefile, condensed=True )
+        d.to_hdf5( self.savefile, condensed=True, **self.kwargs )
 
         expected = {
             'i': {
@@ -695,7 +696,7 @@ class TestVerDictHDF5( unittest.TestCase ):
         } )
 
         # Try to save
-        d.to_hdf5( self.savefile, condensed=True )
+        d.to_hdf5( self.savefile, condensed=True, **self.kwargs )
 
         expected = {
             'name': np.array([ 'a', 'b' ]),
@@ -734,7 +735,7 @@ class TestVerDictHDF5( unittest.TestCase ):
         attrs = { 'x' : 1.5, }
 
         # Try to save
-        d.to_hdf5( self.savefile, attributes=attrs )
+        d.to_hdf5( self.savefile, attributes=attrs, **self.kwargs )
 
         # Compare
         f = h5py.File( self.savefile, 'r' )
@@ -902,7 +903,7 @@ class TestVerDictHDF5( unittest.TestCase ):
         attrs = { 'x' : 1.5, }
 
         # Try to save
-        d.to_hdf5( self.savefile, attributes=attrs, )
+        d.to_hdf5( self.savefile, attributes=attrs, **self.kwargs )
 
         # Compare
         f = h5py.File( self.savefile, 'r' )
@@ -955,7 +956,8 @@ class TestVerDictHDF5( unittest.TestCase ):
         d.to_hdf5(
             self.savefile,
             attributes = attrs,
-            handle_jagged_arrs = 'row datasets'
+            handle_jagged_arrs = 'row datasets',
+            **self.kwargs
         )
 
         # Compare
@@ -975,43 +977,43 @@ class TestVerDictHDF5( unittest.TestCase ):
                             for k, v_k in enumerate( v_j ):
                                 assert v_k == f[str(key)][inner_key][ukey][ukey_j][...][k]
 
+    ########################################################################
 
-        ########################################################################
+    # This is a failing test. Do I *want* it to pass? Why did I create it?
+    def dont_test_to_hdf5_string_and_tuple_array( self ):
 
-        def test_to_hdf5_string_and_tuple_array( self ):
+        # Test data
+        d = verdict.Dict( {
+            1 : {
+                'a': np.array([ ( 'aa', 'bb' ), ( 'cc', 'dd' ) ]),
+                'b': np.array([ ( 'a', 'b' ), ( 'c', 'd' ) ]),
+                'c': 'abcdefg',
+                'd': [
+                    np.array([ ( 'a', 'b' ), ]),
+                    np.array([ ( 'aa', 'bb' ), ( 'cc', 'dd' ) ]),
+                ],
+            },
+        } )
+        attrs = { 'x' : 1.5, }
 
-            # Test data
-            d = verdict.Dict( {
-                1 : {
-                    'a': np.array([ ( 'aa', 'bb' ), ( 'cc', 'dd' ) ]),
-                    'b': np.array([ ( 'a', 'b' ), ( 'c', 'd' ) ]),
-                    'c': 'abcdefg',
-                    'd': [
-                        np.array([ ( 'a', 'b' ), ]),
-                        np.array([ ( 'aa', 'bb' ), ( 'cc', 'dd' ) ]),
-                    ],
-                },
-            } )
-            attrs = { 'x' : 1.5, }
+        # Try to save
+        d.to_hdf5( self.savefile, attributes=attrs, **self.kwargs )
 
-            # Try to save
-            d.to_hdf5( self.savefile, attributes=attrs )
-
-            # Compare
-            f = h5py.File( self.savefile, 'r' )
-            for key, item in d.items():
-                for inner_key, inner_item in item.items():
-                    if inner_key in [ 'a', 'b' ]:
-                        for i, arr in enumerate( inner_item ):
-                            for j, v in enumerate( arr ):
-                                assert v == f[str(key)][inner_key][...][i][j]
-                    elif inner_key in [ 'd', ]:
-                        for i, arr in enumerate( inner_item ):
-                            for j, line in enumerate( arr ):
-                                for k, v in enumerate( line ):
-                                    assert v == f[str(key)][inner_key][...][i][j][k]
-                else:
-                    assert inner_item == f[str(key)][inner_key][...]
+        # Compare
+        f = h5py.File( self.savefile, 'r' )
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                if inner_key in [ 'a', 'b' ]:
+                    for i, arr in enumerate( inner_item ):
+                        for j, v in enumerate( arr ):
+                            assert v == f[str(key)][inner_key][...][i][j]
+                elif inner_key in [ 'd', ]:
+                    for i, arr in enumerate( inner_item ):
+                        for j, line in enumerate( arr ):
+                            for k, v in enumerate( line ):
+                                assert v == f[str(key)][inner_key][...][i][j][k]
+            else:
+                assert inner_item == f[str(key)][inner_key][...]
 
         # Make sure attributes save
         npt.assert_allclose( f.attrs['x'], attrs['x'] )
@@ -1032,12 +1034,13 @@ class TestVerDictHDF5( unittest.TestCase ):
             } ),
         } )
         attrs = { 'x': 1.5 }
-        expected.to_hdf5( self.savefile, attributes=attrs )
+        expected.to_hdf5( self.savefile, attributes=attrs, **self.kwargs )
 
         # Try to load
         actual, actual_attrs = verdict.Dict.from_hdf5(
             self.savefile,
             load_attributes = True,
+            **self.kwargs
         )
 
         # Compare
@@ -1079,10 +1082,10 @@ class TestVerDictHDF5( unittest.TestCase ):
                 } ),
             } ),
         } )
-        expected.to_hdf5( self.savefile, condensed=True )
+        expected.to_hdf5( self.savefile, condensed=True, **self.kwargs )
 
         # Try to load
-        actual = verdict.Dict.from_hdf5( self.savefile, unpack=True )
+        actual = verdict.Dict.from_hdf5( self.savefile, unpack=True, **self.kwargs )
 
         # Compare
         for key, item in expected.items():
@@ -1108,10 +1111,10 @@ class TestVerDictHDF5( unittest.TestCase ):
                 'b': 7.,
             } ),
         } )
-        expected.to_hdf5( self.savefile, condensed=True )
+        expected.to_hdf5( self.savefile, condensed=True, **self.kwargs )
 
         # Try to load
-        actual = verdict.Dict.from_hdf5( self.savefile, unpack=True )
+        actual = verdict.Dict.from_hdf5( self.savefile, unpack=True, **self.kwargs )
 
         # Compare
         for key, item in expected.items():
@@ -1151,10 +1154,10 @@ class TestVerDictHDF5( unittest.TestCase ):
         attrs = { 'x' : 1.5, }
 
         # Try to save
-        d.to_hdf5( self.savefile, attributes=attrs )
+        d.to_hdf5( self.savefile, attributes=attrs, **self.kwargs )
 
         # Try to load
-        actual, attrs = verdict.Dict.from_hdf5( self.savefile, )
+        actual, attrs = verdict.Dict.from_hdf5( self.savefile, **self.kwargs )
 
         # Compare
         f = h5py.File( self.savefile, 'r' )
@@ -1199,10 +1202,10 @@ class TestVerDictHDF5( unittest.TestCase ):
         attrs = { 'x' : 1.5, }
 
         # Try to save
-        d.to_hdf5( self.savefile, attributes=attrs )
+        d.to_hdf5( self.savefile, attributes=attrs, **self.kwargs )
 
         # Try to load
-        actual, attrs = verdict.Dict.from_hdf5( self.savefile, )
+        actual, attrs = verdict.Dict.from_hdf5( self.savefile, **self.kwargs )
 
         # Compare
         for key, item in d.items():
@@ -1253,11 +1256,12 @@ class TestVerDictHDF5( unittest.TestCase ):
         d.to_hdf5(
             self.savefile,
             attributes = attrs,
-            handle_jagged_arrs = 'row datasets'
+            handle_jagged_arrs = 'row datasets',
+            **self.kwargs
         )
 
         # Try to load
-        actual, attrs = verdict.Dict.from_hdf5( self.savefile, )
+        actual, attrs = verdict.Dict.from_hdf5( self.savefile, **self.kwargs )
 
         # Compare
         for key, item in d.items():
@@ -1271,6 +1275,22 @@ class TestVerDictHDF5( unittest.TestCase ):
                         for j, v_j in enumerate( v ):
                             for k, v_k in enumerate( v_j ):
                                 assert v_k == actual[str(key)][inner_key][i][j][k]
+
+########################################################################
+########################################################################
+
+class TestVerDictSparseHDF5( TestVerDictHDF5 ):
+
+    def setUp( self ):
+
+        self.savefile = 'to_hdf5_test.hdf5'
+        self.kwargs = { 'sparse': True }
+
+    def tearDown( self ):
+
+        # Delete spurious files
+        if os.path.isfile( self.savefile ):
+            os.remove( self.savefile )
 
 ########################################################################
 ########################################################################
