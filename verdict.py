@@ -7,6 +7,7 @@
 '''
 
 import copy
+import json
 import h5py
 import h5sparse
 import numpy as np
@@ -904,6 +905,59 @@ class Dict( collections.Mapping ):
             return result, attrs
         else:
             return result
+
+    ########################################################################
+    
+    def to_json(
+        self,
+        filepath,
+        overwrite_existing_file = True,
+    ):
+        '''Save the contents as a JSON file.
+
+        Args:
+            filepath (str):
+                Location to save the hdf5 file at.
+
+            overwrite_existing_file (boolean):
+                If True and a file already exists at filepath, delete it prior
+                to saving.
+
+            condensed (boolean):
+                If True, combine the innermost dictionaries into a condensed
+                DataFrame/array-like format.
+        '''
+
+        # Check for existing
+        if os.path.isfile( filepath ):
+            if overwrite_existing_file:
+                os.path.remove( filepath )
+            else:
+                raise IOError( 'File {} already exists'.format( filepath ) )
+
+        # Format data
+        def recursive_format( data ):
+
+            # Turn to regular dictionary
+            if isinstance( data, Dict ):
+                formatted = data._storage
+            elif isinstance( data, np.ndarray ):
+                formatted = data.tolist()
+            else:
+                formatted = data
+
+            # Repeat
+            if isinstance( formatted, dict ):
+                for key, item in formatted.items():
+                    formatted[key] = recursive_format( item )
+
+            return formatted
+
+        data_to_save = recursive_format( self._storage )
+
+        # Save
+        with open( filepath, 'w', encoding='utf-8') as f:
+            json.dump( data_to_save, f, ensure_ascii=False, indent=4)
 
     ########################################################################
 

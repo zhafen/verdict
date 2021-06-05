@@ -2,6 +2,7 @@
 '''
 
 import copy
+import json
 from mock import patch
 import h5py
 import numpy as np
@@ -1336,6 +1337,97 @@ class TestVerDictSparseHDF5( TestVerDictHDF5 ):
         d2 = verdict.Dict.from_hdf5( self.savefile, **self.kwargs )
         npt.assert_allclose( d['a'].toarray(), d2['a'].toarray() )
         npt.assert_allclose( d['b'], d2['b'] )
+
+    
+########################################################################
+########################################################################
+
+class TestVerDictJSON( unittest.TestCase ):
+
+    def setUp( self ):
+
+        self.savefile = 'to_json_test.json'
+        self.kwargs = {}
+
+    def tearDown( self ):
+
+        # Delete spurious files
+        if os.path.isfile( self.savefile ):
+            os.remove( self.savefile )
+
+    ########################################################################
+
+    def test_to_json( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': np.array([ 1., 2. ]),
+                'b': np.array([ 3., 4. ]),
+            } ),
+            2 : verdict.Dict( {
+                'a': np.array([ 5., 6. ]),
+                'b': np.array([ 7., 8. ]),
+            } ),
+        } )
+        attrs = { 'x' : 1.5, }
+
+        # Try to save
+        d.to_json( self.savefile, **self.kwargs )
+
+        # Compare
+        with open( self.savefile ) as f:
+            actual = json.load(f)
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                npt.assert_allclose(
+                    inner_item,
+                    actual[str(key)][inner_key],
+                )
+
+    ########################################################################
+
+    def test_to_json_additional_nesting( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            'i' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': np.array([ 1., 2. ]),
+                    'b': np.array([ 3., 4. ]),
+                } ),
+                2 : verdict.Dict( {
+                    'a': np.array([ 5., 6. ]),
+                    'b': np.array([ 7., 8. ]),
+                } ),
+            } ),
+            'ii' : verdict.Dict( {
+                1 : verdict.Dict( {
+                    'a': np.array([ 10., 20. ]),
+                    'b': np.array([ 30., 40. ]),
+                } ),
+                2 : verdict.Dict( {
+                    'a': np.array([ 50., 60. ]),
+                    'b': np.array([ 70., 80. ]),
+                } ),
+            } ),
+        } )
+
+        # Try to save
+        d.to_json( self.savefile, **self.kwargs )
+
+        # Compare
+        with open( self.savefile ) as f:
+            actual = json.load(f)
+        for key, item in d.items():
+            for inner_key, inner_item in item.items():
+                for ii_key, ii_item in inner_item.items():
+                    npt.assert_allclose(
+                        ii_item,
+                        actual[key][str(inner_key)][ii_key],
+                    )
+
+    ########################################################################
 
 ########################################################################
 ########################################################################
