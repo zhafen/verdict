@@ -1,13 +1,14 @@
 '''Testing for verdict.py
 '''
 
+import copy
 from mock import patch
 import h5py
 import numpy as np
 import numpy.testing as npt
 import os
 import pandas as pd
-import copy
+import scipy.sparse as ss
 import unittest
 
 import verdict
@@ -1291,6 +1292,29 @@ class TestVerDictSparseHDF5( TestVerDictHDF5 ):
         # Delete spurious files
         if os.path.isfile( self.savefile ):
             os.remove( self.savefile )
+
+    ########################################################################
+
+    def test_sparse_dataset( self ):
+
+        # Test dataset
+        sparse_matrix = np.zeros( (15000, 200 ) )
+        sparse_matrix[0,0] = 5
+        sparse_matrix[1,12] = 5
+
+        # Usual
+        d = verdict.Dict( {
+            'a': sparse_matrix,
+        } )
+        d.to_hdf5( self.savefile )
+        size = os.path.getsize( self.savefile )
+
+        # Sparse
+        d['a'] = ss.csr_matrix( sparse_matrix )
+        d.to_hdf5( self.savefile, sparse=True )
+        sparse_size = os.path.getsize( self.savefile )
+
+        assert sparse_size < size
 
 ########################################################################
 ########################################################################

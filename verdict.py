@@ -768,9 +768,9 @@ class Dict( collections.Mapping ):
                 DataFrame/array-like format, unpack them into a traditional
                 structure.
 
-        jagged_flag (str):
-            Flag to indicate that this part of the hdf5 file contains part of
-            an jagged array-like.
+            jagged_flag (str):
+                Flag to indicate that this part of the hdf5 file contains part of
+                an jagged array-like.
         '''
 
         # If using sparse matrices
