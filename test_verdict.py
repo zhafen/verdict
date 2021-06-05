@@ -1295,7 +1295,7 @@ class TestVerDictSparseHDF5( TestVerDictHDF5 ):
 
     ########################################################################
 
-    def test_sparse_dataset( self ):
+    def test_to_hdf5_sparse_dataset( self ):
 
         # Test dataset
         sparse_matrix = np.zeros( (15000, 200 ) )
@@ -1315,6 +1315,25 @@ class TestVerDictSparseHDF5( TestVerDictHDF5 ):
         sparse_size = os.path.getsize( self.savefile )
 
         assert sparse_size < size
+
+    ########################################################################
+
+    def test_from_hdf5_sparse_dataset( self ):
+
+        # Test dataset
+        sparse_matrix = np.zeros( (15000, 200 ) )
+        sparse_matrix[0,0] = 5
+        sparse_matrix[1,12] = 5
+
+        # Save sparse data
+        d = verdict.Dict( {
+            'a': ss.csr_matrix( sparse_matrix ),
+        } )
+        d.to_hdf5( self.savefile, **self.kwargs )
+
+        # Load sparse data
+        d2 = verdict.Dict.from_hdf5( self.savefile, **self.kwargs )
+        npt.assert_allclose( d['a'].toarray(), d2['a'].toarray() )
 
 ########################################################################
 ########################################################################

@@ -849,7 +849,13 @@ class Dict( collections.Mapping ):
                     return Dict( result )
 
             elif isinstance( item, hdf5_module.Dataset ) or isinstance( item, h5py.Dataset ):
-                arr = np.array( item[...] )
+                try:
+                    arr = np.array( item[...] )
+                except NotImplementedError:
+                    if sparse:
+                        arr = item[()]
+                    else:
+                        raise Exception( 'Not sure how you got here. If sparse is not turned on the above functionality *should* be implemented.' )
 
                 if look_for_saved_jagged_arrs:
                     if 'jagged saved as filled' in item.attrs:
