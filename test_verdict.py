@@ -1328,12 +1328,14 @@ class TestVerDictSparseHDF5( TestVerDictHDF5 ):
         # Save sparse data
         d = verdict.Dict( {
             'a': ss.csr_matrix( sparse_matrix ),
+            'b': np.array([ 1., 2., 3. ]),
         } )
         d.to_hdf5( self.savefile, **self.kwargs )
 
         # Load sparse data
         d2 = verdict.Dict.from_hdf5( self.savefile, **self.kwargs )
         npt.assert_allclose( d['a'].toarray(), d2['a'].toarray() )
+        npt.assert_allclose( d['b'], d2['b'] )
 
 ########################################################################
 ########################################################################
