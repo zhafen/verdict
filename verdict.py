@@ -942,7 +942,9 @@ class Dict( collections.Mapping ):
             if isinstance( data, Dict ):
                 formatted = data._storage
             elif isinstance( data, np.ndarray ):
-                formatted = data.tolist()
+                formatted = list( data )
+            elif isinstance( data, set ):
+                formatted = list( data )
             else:
                 formatted = data
 
@@ -950,6 +952,9 @@ class Dict( collections.Mapping ):
             if isinstance( formatted, dict ):
                 for key, item in formatted.items():
                     formatted[key] = recursive_format( item )
+            if isinstance( formatted, list ):
+                for i, item in enumerate( formatted ):
+                    formatted[i] = recursive_format( item )
 
             return formatted
 
