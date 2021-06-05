@@ -622,6 +622,10 @@ class Dict( collections.Mapping ):
             jagged_flag (str):
                 Flag to indicate that this part of the hdf5 file contains part of
                 an jagged array-like.
+
+            sparse (boolean):
+                If True use h5sparse instead of h5py, allowing saving of sparse matrices
+                with reduced file size.
         '''
 
         # If using sparse matrices
@@ -768,9 +772,19 @@ class Dict( collections.Mapping ):
                 DataFrame/array-like format, unpack them into a traditional
                 structure.
 
+            unpack_name (str):
+                What name is used for the array containing the columns.
+
+            look_for_saved_jagged_arrs (boolean):
+                If True, check dataset names to see if the array is a jagged array.
+
             jagged_flag (str):
                 Flag to indicate that this part of the hdf5 file contains part of
                 an jagged array-like.
+
+            sparse (boolean):
+                If True use h5sparse instead of h5py, allowing reading of sparse matrices
+                with reduced file size.
         '''
 
         # If using sparse matrices
