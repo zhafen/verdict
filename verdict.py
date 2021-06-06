@@ -931,7 +931,7 @@ class Dict( collections.Mapping ):
         # Check for existing
         if os.path.isfile( filepath ):
             if overwrite_existing_file:
-                os.path.remove( filepath )
+                os.remove( filepath )
             else:
                 raise IOError( 'File {} already exists'.format( filepath ) )
 
