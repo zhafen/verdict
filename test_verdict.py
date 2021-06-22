@@ -1175,6 +1175,14 @@ class TestVerDictHDF5( unittest.TestCase ):
 
     ########################################################################
 
+    def test_from_hdf5_create_nonexistent( self ):
+
+        d = verdict.Dict.from_hdf5( self.savefile, create_nonexistent=True )
+
+        assert len( d ) == 0
+
+    ########################################################################
+
     def test_from_hdf5_jagged_arr( self ):
 
         # Test data

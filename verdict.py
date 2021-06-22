@@ -757,6 +757,7 @@ class Dict( collections.Mapping ):
         look_for_saved_jagged_arrs = True,
         jagged_flag = 'jagged',
         sparse = False,
+        create_nonexistent = False,
     ):
         '''Load a HDF5 file as a verdict Dict.
 
@@ -786,6 +787,9 @@ class Dict( collections.Mapping ):
             sparse (boolean):
                 If True use h5sparse instead of h5py, allowing reading of sparse matrices
                 with reduced file size.
+
+            create_nonexistent (boolean):
+                If True if the file does not exist create it.
         '''
 
         # If using sparse matrices
@@ -794,7 +798,10 @@ class Dict( collections.Mapping ):
         else:
             hdf5_module = h5py
 
-        f = hdf5_module.File( filepath, 'r' )
+        if not os.path.exists( filepath ) and create_nonexistent:
+            return Dict({})
+        else:
+            f = hdf5_module.File( filepath, 'r' )
 
         def recursive_retrieve( current_path, key ):
             '''Function for recursively loading from an hdf5 file.
