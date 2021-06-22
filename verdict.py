@@ -800,8 +800,8 @@ class Dict( collections.Mapping ):
 
         if not os.path.exists( filepath ) and create_nonexistent:
             return Dict({})
-        else:
-            f = hdf5_module.File( filepath, 'r' )
+
+        f = hdf5_module.File( filepath, 'r' )
 
         def recursive_retrieve( current_path, key ):
             '''Function for recursively loading from an hdf5 file.
@@ -977,13 +977,20 @@ class Dict( collections.Mapping ):
     def from_json(
         cls,
         filepath,
+        create_nonexisting = False,
     ):
         '''Load a HDF5 file as a verdict Dict.
 
         Args:
             filepath (str):
                 Location to load the hdf5 file from.
+
+            create_nonexisting (bool):
+                If True and no data to load, return an empty dictionary.
         '''
+
+        if not os.path.exists( filepath ) and create_nonexisting:
+            return Dict({})
 
         with open( filepath ) as f:
             data = json.load( f )

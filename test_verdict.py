@@ -1469,6 +1469,14 @@ class TestVerDictJSON( unittest.TestCase ):
                     actual[str(key)][inner_key],
                 )
 
+    ########################################################################
+
+    def test_from_json_create_nonexisting( self ):
+
+        d = verdict.Dict.from_json( self.savefile, create_nonexisting=True )
+
+        assert len( d ) == 0
+
 ########################################################################
 ########################################################################
 
