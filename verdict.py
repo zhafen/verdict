@@ -619,6 +619,8 @@ class Dict( collections.Mapping ):
                         any jagged arrays.
                     row datasets:
                         Save each row of a jagged array as a separate dataset.
+                    assume_none:
+                        Don't handle jagged arrays. Assume there are none.
 
             jagged_flag (str):
                 Flag to indicate that this part of the hdf5 file contains part of
@@ -706,16 +708,19 @@ class Dict( collections.Mapping ):
             else:
 
                 # Save a jagged array
-                if check_if_jagged_arr( item ):
+                if handle_jagged_arrs != 'assume_none':
+                    if check_if_jagged_arr( item ):
 
-                    create_dataset_jagged_arr(
-                        f,
-                        current_path,
-                        item,
-                        method = handle_jagged_arrs,
-                        jagged_flag = jagged_flag,
-                        hdf5_module = hdf5_module,
-                    )
+                        create_dataset_jagged_arr(
+                            f,
+                            current_path,
+                            item,
+                            method = handle_jagged_arrs,
+                            jagged_flag = jagged_flag,
+                            hdf5_module = hdf5_module,
+                        )
+                    else:
+                        create_dataset_fixed( f, current_path, item, hdf5_module=hdf5_module )
                 else:
                     create_dataset_fixed( f, current_path, item, hdf5_module=hdf5_module )
 
