@@ -1042,10 +1042,12 @@ class TestVerDictHDF5( unittest.TestCase ):
                 'a': np.array([ 1., 2. ]),
                 'b': np.array([ 3., 4. ]),
                 'c': np.array([ 'a', 'b' ]),
+                'd': [],
             } ),
             2 : verdict.Dict( {
                 'a': np.array([ 5., 6. ]),
                 'b': np.array([ 7., 8. ]),
+                'c': np.array([ [ 'a', 'b' ], [ 'c', 'd' ] ]),
             } ),
         } )
         attrs = { 'x': 1.5 }
