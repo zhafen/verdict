@@ -841,6 +841,7 @@ class Dict( collections.Mapping ):
                         i_result = {}
                         ii_items = zip( group[unpack_name][...].astype( str ), group[i_key][...] )
                         for ii_key, ii_item in ii_items:
+                            ii_item = if_byte_then_to_str( ii_item )
                             i_result[ii_key] = ii_item
 
                         result[i_key] = Dict( i_result )
@@ -857,9 +858,7 @@ class Dict( collections.Mapping ):
                             unpacked = []
                             for i, result_i in enumerate( result ):
                                 unpacked_i = result['{}{}'.format( jagged_flag, i )]
-                                # Check for bytes
-                                if hasattr( unpacked_i[0], 'decode' ):
-                                    unpacked_i = unpacked_i.astype( 'str' )
+                                unpacked_i = if_byte_then_to_str( unpacked_i )
                                 unpacked.append( unpacked_i )
                             return unpacked
 
@@ -885,6 +884,8 @@ class Dict( collections.Mapping ):
                 # Handle 0-length arrays
                 if arr.shape == ():
                     arr = arr[()]
+
+                arr = if_byte_then_to_str( arr )
 
                 return arr
 
@@ -1154,7 +1155,7 @@ def check_if_jagged_arr( arr ):
         for i, arr_i in enumerate( arr ):
 
             # Check if an array
-            if is_array_like( arr_i ):
+            if pd.api.types.is_list_like( arr_i ):
                 l_current = len( arr_i )
             else:
                 l_current = 0
@@ -1264,7 +1265,7 @@ def jagged_arr_to_filled_arr( arr, fill_value=None, dtype=None, ):
 
         depths = []
         for v in a:
-            if is_array_like( v ):
+            if pd.api.types.is_list_like( v ):
                 depths.append( arr_depth( v, level+1 ) )
             else:
                 depths.append( level )
@@ -1285,7 +1286,7 @@ def jagged_arr_to_filled_arr( arr, fill_value=None, dtype=None, ):
 
         # Recurse
         for v in a:
-            if not is_array_like( v ):
+            if not pd.api.types.is_list_like( v ):
                 if type( v ) not in dtypes:
                     if isinstance( v, str ):
                         dtype = len( v )
@@ -1365,7 +1366,7 @@ def filled_arr_to_jagged_arr( arr, fill_value ):
 
     result = []
     for v in arr:
-        if is_array_like( v ):
+        if pd.api.types.is_list_like( v ):
             result.append( filled_arr_to_jagged_arr( v, fill_value ) )
         else:
 
@@ -1383,20 +1384,17 @@ def filled_arr_to_jagged_arr( arr, fill_value ):
 
 ########################################################################
 
-def is_array_like( a ):
-    '''Check if something is array-like.'''
-
-    a = if_byte_then_to_str( a )
-
-    return hasattr( a, '__len__' ) and not isinstance( a, str )
-
-########################################################################
-
 def if_byte_then_to_str( a ):
 
-    try:
-        a = a.decode( 'UTF-8' )
-    except (UnicodeDecodeError, AttributeError):
-        pass
+    # For arrays
+    if pd.api.types.is_list_like( a ):
+        if hasattr( a[0], 'decode' ):
+            a = a.astype( 'str' )
+    # For single values
+    else:
+        try:
+            a = a.decode( 'UTF-8' )
+        except (UnicodeDecodeError, AttributeError):
+            pass
 
     return a

@@ -1041,6 +1041,7 @@ class TestVerDictHDF5( unittest.TestCase ):
             1 : verdict.Dict( {
                 'a': np.array([ 1., 2. ]),
                 'b': np.array([ 3., 4. ]),
+                'c': np.array([ 'a', 'b' ]),
             } ),
             2 : verdict.Dict( {
                 'a': np.array([ 5., 6. ]),
@@ -1061,10 +1062,16 @@ class TestVerDictHDF5( unittest.TestCase ):
         f = h5py.File( self.savefile, 'r' )
         for key, item in actual.items():
             for inner_key, inner_item in item.items():
-                npt.assert_allclose(
-                    inner_item,
-                    f[str(key)][inner_key][...],
-                )
+                try:
+                    npt.assert_allclose(
+                        inner_item,
+                        f[str(key)][inner_key][...],
+                    )
+                except TypeError:
+                    assert len( np.setdiff1d(
+                        inner_item,
+                        f[key][inner_key][...].astype( str ),
+                    ) ) == 0
 
         # Compare attributes
         self.assertEqual( attrs, actual_attrs )
