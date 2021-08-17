@@ -676,7 +676,7 @@ class TestVerDictHDF5( unittest.TestCase ):
                 except TypeError:
                     assert len( np.setdiff1d(
                         inner_item,
-                        f[key][inner_key][...],
+                        f[key][inner_key][...].astype( str ),
                     ) ) == 0
 
     ########################################################################
@@ -717,7 +717,7 @@ class TestVerDictHDF5( unittest.TestCase ):
             except TypeError:
                 assert len( np.setdiff1d(
                     item,
-                    f[key][...],
+                    f[key][...].astype( str ),
                 ) ) == 0
 
     ########################################################################
@@ -914,12 +914,18 @@ class TestVerDictHDF5( unittest.TestCase ):
                 if inner_key != 'c':
                     for i, v in enumerate( inner_item ):
                         for j, v_j in enumerate( v ):
-                            assert v_j == f[str(key)][inner_key][...][i][j]
+                            try:
+                                assert v_j == f[str(key)][inner_key][...][i][j]
+                            except AssertionError:
+                                assert v_j == f[str(key)][inner_key][...][i][j].decode( 'UTF-8' )
                 else:
                     for i, v in enumerate( inner_item ):
                         for j, v_j in enumerate( v ):
                             for k, v_k in enumerate( v_j ):
-                                assert v_k == f[str(key)][inner_key][...][i,j,k]
+                                try:
+                                    assert v_k == f[str(key)][inner_key][...][i,j,k]
+                                except AssertionError:
+                                    assert v_k == f[str(key)][inner_key][...][i,j,k].decode( 'UTF-8' )
 
     ########################################################################
 
@@ -970,14 +976,20 @@ class TestVerDictHDF5( unittest.TestCase ):
                     for i, v in enumerate( inner_item ):
                         ukey = 'jagged{}'.format( i )
                         for j, v_j in enumerate( v ):
-                            assert v_j == f[str(key)][inner_key][ukey][...][j]
+                            try:
+                                assert v_j == f[str(key)][inner_key][ukey][...][j]
+                            except AssertionError:
+                                assert v_j == f[str(key)][inner_key][ukey][...][j].decode( 'UTF-8' )
                 else:
                     for i, v in enumerate( inner_item ):
                         ukey = 'jagged{}'.format( i )
                         for j, v_j in enumerate( v ):
                             ukey_j = 'jagged{}'.format( j )
                             for k, v_k in enumerate( v_j ):
-                                assert v_k == f[str(key)][inner_key][ukey][ukey_j][...][k]
+                                try:
+                                    assert v_k == f[str(key)][inner_key][ukey][ukey_j][...][k]
+                                except AssertionError:
+                                    assert v_k == f[str(key)][inner_key][ukey][ukey_j][...][k].decode( 'UTF-8' )
 
     ########################################################################
 

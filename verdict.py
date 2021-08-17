@@ -839,7 +839,7 @@ class Dict( collections.Mapping ):
                             continue
 
                         i_result = {}
-                        ii_items = zip( group[unpack_name][...], group[i_key][...] )
+                        ii_items = zip( group[unpack_name][...].astype( str ), group[i_key][...] )
                         for ii_key, ii_item in ii_items:
                             i_result[ii_key] = ii_item
 
@@ -854,10 +854,14 @@ class Dict( collections.Mapping ):
                     if look_for_saved_jagged_arrs:
                         # Look for saved jagged arrays
                         if i_key[:len(jagged_flag)] == jagged_flag:
-                            return [
-                                result['{}{}'.format( jagged_flag, i )]
-                                for i in range( len( result ) )
-                            ]
+                            unpacked = []
+                            for i, result_i in enumerate( result ):
+                                unpacked_i = result['{}{}'.format( jagged_flag, i )]
+                                # Check for bytes
+                                if hasattr( unpacked_i[0], 'decode' ):
+                                    unpacked_i = unpacked_i.astype( 'str' )
+                                unpacked.append( unpacked_i )
+                            return unpacked
 
                     return Dict( result )
 
@@ -901,7 +905,7 @@ class Dict( collections.Mapping ):
                     continue
 
                 i_result = {}
-                ii_items = zip( result[unpack_name], result[i_key] )
+                ii_items = zip( result[unpack_name].astype( str ), result[i_key] )
                 for ii_key, ii_item in ii_items:
                     i_result[ii_key] = ii_item
 
@@ -1099,7 +1103,7 @@ def create_dataset_fixed( f, path, data, hdf5_module, attrs=None ):
     '''Accounts for h5py not recognizing unicode. This is fixed
     in h5py 2.9.0, with PR #1032 (not merged at the time of writing).
     The fix used here is exactly what the PR does.'''
-
+    
     try:
         special_dtype = hdf5_module.special_dtype( vlen=six.text_type )
     except AttributeError:
@@ -1364,6 +1368,9 @@ def filled_arr_to_jagged_arr( arr, fill_value ):
         if is_array_like( v ):
             result.append( filled_arr_to_jagged_arr( v, fill_value ) )
         else:
+
+            v = if_byte_then_to_str( v )
+
             if isinstance( v, str ):
                 if v == fill_value:
                     continue
@@ -1378,4 +1385,18 @@ def filled_arr_to_jagged_arr( arr, fill_value ):
 
 def is_array_like( a ):
     '''Check if something is array-like.'''
+
+    a = if_byte_then_to_str( a )
+
     return hasattr( a, '__len__' ) and not isinstance( a, str )
+
+########################################################################
+
+def if_byte_then_to_str( a ):
+
+    try:
+        a = a.decode( 'UTF-8' )
+    except (UnicodeDecodeError, AttributeError):
+        pass
+
+    return a
