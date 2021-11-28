@@ -805,122 +805,122 @@ class Dict( collections.Mapping ):
         if not os.path.exists( filepath ) and create_nonexistent:
             return Dict({})
 
-        f = hdf5_module.File( filepath, 'r' )
+        with hdf5_module.File( filepath, 'r' ) as f:
 
-        def recursive_retrieve( current_path, key ):
-            '''Function for recursively loading from an hdf5 file.
+            def recursive_retrieve( current_path, key ):
+                '''Function for recursively loading from an hdf5 file.
 
-            Args:
-                current_path (str):
-                    Current location in the hdf5 file.
+                Args:
+                    current_path (str):
+                        Current location in the hdf5 file.
 
-                key (str):
-                    Key to load.
-            '''
+                    key (str):
+                        Key to load.
+                '''
 
-            # Update path
-            current_path = '{}/{}'.format( current_path, key )
+                # Update path
+                current_path = '{}/{}'.format( current_path, key )
 
-            item = f[current_path]
+                item = f[current_path]
 
-            if isinstance( item, hdf5_module.Group ):
+                if isinstance( item, hdf5_module.Group ):
 
-                group = f[current_path]
-                result = {}
+                    group = f[current_path]
+                    result = {}
 
-                # Sometimes the data is saved in a condensed, DataFrame-like,
-                # format. But when we load it we may want it back in the
-                # usual format.
-                if unpack and unpack_name in group.keys():
-                    for i_key in group.keys():
+                    # Sometimes the data is saved in a condensed, DataFrame-like,
+                    # format. But when we load it we may want it back in the
+                    # usual format.
+                    if unpack and unpack_name in group.keys():
+                        for i_key in group.keys():
 
-                        if i_key == unpack_name:
-                            continue
+                            if i_key == unpack_name:
+                                continue
 
-                        i_result = {}
-                        ii_items = zip( group[unpack_name][...].astype( str ), group[i_key][...] )
-                        for ii_key, ii_item in ii_items:
-                            ii_item = if_byte_then_to_str( ii_item )
-                            i_result[ii_key] = ii_item
+                            i_result = {}
+                            ii_items = zip( group[unpack_name][...].astype( str ), group[i_key][...] )
+                            for ii_key, ii_item in ii_items:
+                                ii_item = if_byte_then_to_str( ii_item )
+                                i_result[ii_key] = ii_item
 
-                        result[i_key] = Dict( i_result )
+                            result[i_key] = Dict( i_result )
 
-                    return Dict( result )
+                        return Dict( result )
 
-                else:
-                    for i_key in group.keys():
-                        result[i_key] = recursive_retrieve( current_path, i_key )
+                    else:
+                        for i_key in group.keys():
+                            result[i_key] = recursive_retrieve( current_path, i_key )
+
+                        if look_for_saved_jagged_arrs:
+                            # Look for saved jagged arrays
+                            if i_key[:len(jagged_flag)] == jagged_flag:
+                                unpacked = []
+                                for i, result_i in enumerate( result ):
+                                    unpacked_i = result['{}{}'.format( jagged_flag, i )]
+                                    unpacked_i = if_byte_then_to_str( unpacked_i )
+                                    unpacked.append( unpacked_i )
+                                return unpacked
+
+                        return Dict( result )
+
+                elif isinstance( item, hdf5_module.Dataset ) or isinstance( item, h5py.Dataset ):
+                    try:
+                        arr = np.array( item[...] )
+                    except NotImplementedError:
+                        if sparse:
+                            arr = item[()]
+                        else:
+                            raise Exception( 'Not sure how you got here. If sparse is not turned on the above functionality *should* be implemented.' )
 
                     if look_for_saved_jagged_arrs:
-                        # Look for saved jagged arrays
-                        if i_key[:len(jagged_flag)] == jagged_flag:
-                            unpacked = []
-                            for i, result_i in enumerate( result ):
-                                unpacked_i = result['{}{}'.format( jagged_flag, i )]
-                                unpacked_i = if_byte_then_to_str( unpacked_i )
-                                unpacked.append( unpacked_i )
-                            return unpacked
+                        if 'jagged saved as filled' in item.attrs:
+                            arr = filled_arr_to_jagged_arr(
+                                item[...],
+                                item.attrs['fill value'],
+                            )
+                            return arr
 
-                    return Dict( result )
+                    # Handle 0-length arrays
+                    if arr.shape == ():
+                        arr = arr[()]
 
-            elif isinstance( item, hdf5_module.Dataset ) or isinstance( item, h5py.Dataset ):
-                try:
-                    arr = np.array( item[...] )
-                except NotImplementedError:
-                    if sparse:
-                        arr = item[()]
-                    else:
-                        raise Exception( 'Not sure how you got here. If sparse is not turned on the above functionality *should* be implemented.' )
+                    arr = if_byte_then_to_str( arr )
 
-                if look_for_saved_jagged_arrs:
-                    if 'jagged saved as filled' in item.attrs:
-                        arr = filled_arr_to_jagged_arr(
-                            item[...],
-                            item.attrs['fill value'],
-                        )
-                        return arr
+                    return arr
 
-                # Handle 0-length arrays
-                if arr.shape == ():
-                    arr = arr[()]
+            result = {}
+            for key in f.keys():
+                result[key] = recursive_retrieve( '', key )
 
-                arr = if_byte_then_to_str( arr )
+            result = Dict( result )
+            result.unpack_name = unpack_name
 
-                return arr
+            # For shallow save files
+            if unpack and unpack_name in result.keys():
+                true_result = {}
 
-        result = {}
-        for key in f.keys():
-            result[key] = recursive_retrieve( '', key )
+                for i_key in result.keys():
 
-        result = Dict( result )
-        result.unpack_name = unpack_name
+                    if i_key == unpack_name:
+                        continue
 
-        # For shallow save files
-        if unpack and unpack_name in result.keys():
-            true_result = {}
+                    i_result = {}
+                    ii_items = zip( result[unpack_name].astype( str ), result[i_key] )
+                    for ii_key, ii_item in ii_items:
+                        i_result[ii_key] = ii_item
 
-            for i_key in result.keys():
+                    true_result[i_key] = Dict( i_result )
 
-                if i_key == unpack_name:
-                    continue
+                result = true_result
 
-                i_result = {}
-                ii_items = zip( result[unpack_name].astype( str ), result[i_key] )
-                for ii_key, ii_item in ii_items:
-                    i_result[ii_key] = ii_item
-
-                true_result[i_key] = Dict( i_result )
-
-            result = true_result
-
-        # Load (or don't) attributes and return
-        if load_attributes and len( f.attrs.keys() ) > 0:
-            attrs = {}
-            for key in f.attrs.keys():
-                attrs[key] = f.attrs[key]
-            return result, attrs
-        else:
-            return result
+            # Load (or don't) attributes and return
+            if load_attributes and len( f.attrs.keys() ) > 0:
+                attrs = {}
+                for key in f.attrs.keys():
+                    attrs[key] = f.attrs[key]
+                return result, attrs
+            else:
+                return result
 
     ########################################################################
     
