@@ -651,105 +651,103 @@ class Dict( collections.Mapping ):
             exist_ok = True
         )
 
-        f = hdf5_module.File( filepath, 'w-' )
+        with hdf5_module.File( filepath, 'w-' ) as f:
 
-        # Store attributes
-        if attributes is not None:
-            for key, item in attributes.items():
-                f.attrs[key] = item
+            # Store attributes
+            if attributes is not None:
+                for key, item in attributes.items():
+                    f.attrs[key] = item
 
-        def recursive_save( current_path, key, item ):
-            '''Function for recursively saving to an hdf5 file.
+            def recursive_save( current_path, key, item ):
+                '''Function for recursively saving to an hdf5 file.
 
-            Args:
-                current_path (str):
-                    Current location in the hdf5 file.
+                Args:
+                    current_path (str):
+                        Current location in the hdf5 file.
 
-                key (str):
-                    Key to save.
+                    key (str):
+                        Key to save.
 
-                item:
-                    Item to save.
-            '''
+                    item:
+                        Item to save.
+                '''
 
-            # Update path
-            current_path = '{}/{}'.format( current_path, key )
+                # Update path
+                current_path = '{}/{}'.format( current_path, key )
 
-            # Convert missed dictionaries into verdict versions
-            if isinstance( item, dict ):
-                item = Dict( item )
+                # Convert missed dictionaries into verdict versions
+                if isinstance( item, dict ):
+                    item = Dict( item )
 
-            if isinstance( item, Dict ):
+                if isinstance( item, Dict ):
 
-                # Make space for the data set
-                f.create_group( current_path )
+                    # Make space for the data set
+                    f.create_group( current_path )
 
-                # Save in condensed format
-                if condensed and item.depth() == 2:
-                    df = item.to_df()
+                    # Save in condensed format
+                    if condensed and item.depth() == 2:
+                        df = item.to_df()
 
-                    recursive_save(
-                        current_path,
-                        df.index.name,
-                        df.index.values.astype( str )
-                    )
-                    for c_name in df.columns:
                         recursive_save(
                             current_path,
-                            c_name,
-                            df[c_name].values,
+                            df.index.name,
+                            df.index.values.astype( str )
                         )
+                        for c_name in df.columns:
+                            recursive_save(
+                                current_path,
+                                c_name,
+                                df[c_name].values,
+                            )
 
+                    else:
+                        # Recurse
+                        for inner_key, inner_item in item.items():
+                            recursive_save( current_path, inner_key, inner_item )
+
+                # Save data if the inner item isn't a Dict
                 else:
-                    # Recurse
-                    for inner_key, inner_item in item.items():
-                        recursive_save( current_path, inner_key, inner_item )
 
-            # Save data if the inner item isn't a Dict
-            else:
+                    # Save a jagged array
+                    if handle_jagged_arrs != 'assume_none':
+                        if check_if_jagged_arr( item ):
 
-                # Save a jagged array
-                if handle_jagged_arrs != 'assume_none':
-                    if check_if_jagged_arr( item ):
-
-                        create_dataset_jagged_arr(
-                            f,
-                            current_path,
-                            item,
-                            method = handle_jagged_arrs,
-                            jagged_flag = jagged_flag,
-                            hdf5_module = hdf5_module,
-                        )
+                            create_dataset_jagged_arr(
+                                f,
+                                current_path,
+                                item,
+                                method = handle_jagged_arrs,
+                                jagged_flag = jagged_flag,
+                                hdf5_module = hdf5_module,
+                            )
+                        else:
+                            create_dataset_fixed( f, current_path, item, hdf5_module=hdf5_module )
                     else:
                         create_dataset_fixed( f, current_path, item, hdf5_module=hdf5_module )
-                else:
-                    create_dataset_fixed( f, current_path, item, hdf5_module=hdf5_module )
 
-        # Shallow dictionary condensed edge case
-        shallow_condensed_save = ( self.depth() <= 2 ) and condensed
+            # Shallow dictionary condensed edge case
+            shallow_condensed_save = ( self.depth() <= 2 ) and condensed
 
-        # Actual save
-        if not shallow_condensed_save:
-            for key, item in self.items():
-                recursive_save( '', key, item )
+            # Actual save
+            if not shallow_condensed_save:
+                for key, item in self.items():
+                    recursive_save( '', key, item )
 
-        # For relatively shallow dictionaries
-        else:
-            df = self.to_df()
+            # For relatively shallow dictionaries
+            else:
+                df = self.to_df()
 
-            recursive_save(
-                '',
-                df.index.name,
-                df.index.values.astype( str )
-            )
-            for c_name in df.columns:
                 recursive_save(
                     '',
-                    c_name,
-                    df[c_name].values,
+                    df.index.name,
+                    df.index.values.astype( str )
                 )
-
-        f.close()
+                for c_name in df.columns:
+                    recursive_save(
+                        '',
+                        c_name,
+                        df[c_name].values,
+                    )
 
     ########################################################################
 
