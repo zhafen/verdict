@@ -233,20 +233,6 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
-    def test_getitem_split( self ):
-
-        d = verdict.Dict({
-            'a/b': 1,
-            'a' : { 'c': 2 },
-            'b' : { 'c': { 'd': 3 } },
-        })
-
-        assert d['a/b'] == 1
-        assert d['a/c'] == 2
-        assert d['b/c/d'] == 3
-
-    ########################################################################
-
     def test_setitem_create( self ):
 
         d = verdict.Dict({
