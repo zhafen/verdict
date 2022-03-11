@@ -15,6 +15,7 @@ import os
 import pandas as pd
 import scipy.sparse
 import six
+import tqdm
 
 try:
     import collections.abc as collections
@@ -730,7 +731,7 @@ class Dict( collections.Mapping ):
 
             # Actual save
             if not shallow_condensed_save:
-                for key, item in self.items():
+                for key, item in tqdm.tqdm( self.items() ):
                     recursive_save( '', key, item )
 
             # For relatively shallow dictionaries
@@ -742,7 +743,7 @@ class Dict( collections.Mapping ):
                     df.index.name,
                     df.index.values.astype( str )
                 )
-                for c_name in df.columns:
+                for c_name in tqdm.tqdm( df.columns ):
                     recursive_save(
                         '',
                         c_name,
