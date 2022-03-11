@@ -79,20 +79,24 @@ class Dict( collections.Mapping ):
         return max( depths )
 
     def __getitem__( self, item ):
-        try:
-            return self._storage[item]
-        # Allow accessing a given depth using '/'
-        except KeyError:
-
-            keys = item.split( '/' )
-            result = self._storage[keys[0]]
-            for key in keys[1:]:
-                result = result[key]
-
-            return result
+        return self._storage[item]
 
     def __setitem__( self, key, item ):
         self._storage[key] = item
+
+    def setitem( self, key, item, *more_keys ):
+        '''Set a value, allowing for nested setting.'''
+
+        if len( more_keys ) == 0:
+            self[key] = item
+        else:
+            # Try to save
+            try:
+                self[key]
+            except KeyError:
+                self[key] = Dict({})
+
+            self[key].setitem( more_keys[0], item, *more_keys[1:] )
 
     def __delitem__( self, key ):
         del self._storage[key]

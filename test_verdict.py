@@ -233,17 +233,24 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
-    def test_getitem_split( self ):
+    def test_setitem_create( self ):
 
         d = verdict.Dict({
             'a/b': 1,
             'a' : { 'c': 2 },
-            'b' : { 'c': { 'd': 3 } },
         })
 
-        assert d['a/b'] == 1
-        assert d['a/c'] == 2
-        assert d['b/c/d'] == 3
+        d.setitem( 'standard', 3 )
+        d.setitem( 'a', 3, 'c' )
+        d.setitem( 'a', 2, 'e' )
+        d.setitem( 'b', 3, 'c', 'd' )
+
+        assert d['standard'] == 3
+        assert d['a']['c'] == 3
+        assert d['a']['e'] == 2
+        assert d['b']['c']['d'] == 3
+
+    ########################################################################
 
     def test_call_custom_kwargs( self ):
 
