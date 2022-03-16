@@ -26,6 +26,7 @@ setuptools.setup(
         'setuptools>=28.8.0',
         'h5py>=2.7.0',
         'h5sparse',
+        'tqdm',
     ],
     py_modules=[ 'verdict', 'test_verdict' ],
 )
