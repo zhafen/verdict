@@ -61,6 +61,9 @@ class Dict( collections.Mapping ):
     def values( self ):
         return self._storage.values()
 
+    def update( self, value ):
+        self._storage.update( value )
+
     def depth( self, level=1 ):
         '''Depth of the Dict.
 
