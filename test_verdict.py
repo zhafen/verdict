@@ -1421,6 +1421,9 @@ class TestVerDictJSON( unittest.TestCase ):
                     actual[str(key)][inner_key],
                 )
 
+        # Ensure that the dictionary behavior is preserved
+        d[1] / 2.
+
     ########################################################################
 
     def test_to_json_additional_nesting( self ):

@@ -982,7 +982,7 @@ class Dict( collections.Mapping ):
 
             return formatted
 
-        data_to_save = recursive_format( self._storage )
+        data_to_save = recursive_format( copy.deepcopy( self._storage ) )
 
         # Save
         with open( filepath, 'w', encoding='utf-8') as f:
