@@ -43,6 +43,7 @@ class Dict( collections.Mapping ):
 
         self._storage = dict( *args, **kwargs )
         self.unpack_name = 'name'
+        self.number_format = '{:.3g}' # Default, can be changed.
 
         # Convert contained dicts to Dicts
         for key, item in self.items():
@@ -104,6 +105,11 @@ class Dict( collections.Mapping ):
     def __delitem__( self, key ):
         del self._storage[key]
 
+    def set_number_format( self, number_format ):
+        '''Set the string that formats numbers.'''
+
+        self.number_format = number_format
+
     def __repr__( self ):
 
         out_str = "Dict, {\n"
@@ -111,10 +117,14 @@ class Dict( collections.Mapping ):
         for key in self.keys():
 
             def get_print_obj( obj ):
+                # Try pretty printing values
                 try:
-                    print_obj = obj.__repr__()
+                    print_obj = self.number_format.format( obj )
                 except:
-                    print_obj = obj
+                    try:
+                        print_obj = obj.__repr__()
+                    except:
+                        print_obj = obj
                 return print_obj
 
             out_str += "{} : {},\n".format(
@@ -271,6 +281,9 @@ class Dict( collections.Mapping ):
 
     def __rsub__( self, other ):
         results = {}
+
+        # DEBUG
+        import pdb; pdb.set_trace()
 
         if isinstance( other, Dict ):
             for key in self.keys():
