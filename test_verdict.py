@@ -1562,9 +1562,9 @@ class TestVerDictJSON( unittest.TestCase ):
 
     ########################################################################
 
-    def test_from_json_create_nonexisting( self ):
+    def test_from_json_create_nonexistent( self ):
 
-        d = verdict.Dict.from_json( self.savefile, create_nonexisting=True )
+        d = verdict.Dict.from_json( self.savefile, create_nonexistent=True )
 
         assert len( d ) == 0
 

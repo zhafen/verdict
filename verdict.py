@@ -1048,7 +1048,7 @@ class Dict( collections.Mapping ):
     def from_json(
         cls,
         filepath,
-        create_nonexisting = False,
+        create_nonexistent = False,
     ):
         '''Load a HDF5 file as a verdict Dict.
 
@@ -1056,11 +1056,11 @@ class Dict( collections.Mapping ):
             filepath (str):
                 Location to load the hdf5 file from.
 
-            create_nonexisting (bool):
+            create_nonexistent (bool):
                 If True and no data to load, return an empty dictionary.
         '''
 
-        if not os.path.exists( filepath ) and create_nonexisting:
+        if not os.path.exists( filepath ) and create_nonexistent:
             return Dict({})
 
         with open( filepath ) as f:
