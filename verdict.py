@@ -1071,6 +1071,15 @@ class Dict( collections.Mapping ):
     ########################################################################
 
     def save( self, filepath, *args, **kwargs ):
+        '''Call to_json or to_hdf5 depending on the extension given in the filepath.
+
+        Args:
+            filepath (str):
+                Location to load the hdf5 file from.
+
+        *args, **kwargs:
+            Passed to to_json or to_hdf5
+        '''
 
         filetype = os.path.splitext( filepath )[1]
         if filetype == '.json':
@@ -1082,6 +1091,15 @@ class Dict( collections.Mapping ):
 
     @classmethod
     def load( cls, filepath, *args, **kwargs ):
+        '''Call from_json or from_hdf5 depending on the extension given in the filepath.
+
+        Args:
+            filepath (str):
+                Location to load the hdf5 file from.
+
+        *args, **kwargs:
+            Passed to from_json or from_hdf5
+        '''
 
         filetype = os.path.splitext( filepath )[1]
         if filetype == '.json':
