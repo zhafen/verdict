@@ -392,6 +392,9 @@ class Dict( collections.Mapping ):
 
     def diff( self, other ):
 
+        if not isinstance( other, Dict ):
+            raise TypeError( 'Dict.diff is only valid when comparing two Dict objects.' )
+
         diff_dict = Dict({})
         for key, item in self.items():
 
@@ -403,6 +406,14 @@ class Dict( collections.Mapping ):
                 # Both values
                 elif item != other[key]:
                     diff_dict[key] = ( item, other[key] )
+        
+        for key, item in other.items():
+
+            # Skip keys handled above
+            if key in self:
+                continue
+
+            diff_dict[key] = ( None, item )
 
         return diff_dict
 
