@@ -282,9 +282,6 @@ class Dict( collections.Mapping ):
     def __rsub__( self, other ):
         results = {}
 
-        # DEBUG
-        import pdb; pdb.set_trace()
-
         if isinstance( other, Dict ):
             for key in self.keys():
                 results[key] = other[key] - self._storage[key]
@@ -392,6 +389,17 @@ class Dict( collections.Mapping ):
     ########################################################################
     # Other operations
     ########################################################################
+
+    def diff( self, other ):
+
+        diff_dict = Dict({})
+        for key, item in self.items():
+
+            if key in other:
+                if item != other[key]:
+                    diff_dict[key] = ( item, other[key] )
+
+        return diff_dict
 
     def sum_contents( self ):
         '''Get the sum of all the contents inside the Dict.'''

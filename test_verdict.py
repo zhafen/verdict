@@ -388,6 +388,18 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
+    def test_diff( self ):
+
+        d1 = verdict.Dict( { 1 : 9, 2 : 2 } )
+        d2 = verdict.Dict( { 1 : 3, 2 : 2 } )
+
+        expected = { 1 : ( 9, 3 ), }
+
+        actual = d1.diff( d2 )
+        self.assertEqual( expected, actual )
+
+    ########################################################################
+
     def test_sum_contents( self ):
 
         d1 = verdict.Dict( { 1 : 1, 2 : 2, 3 : 3, } )
