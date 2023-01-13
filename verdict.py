@@ -391,6 +391,18 @@ class Dict( collections.Mapping ):
     ########################################################################
 
     def diff( self, other ):
+        '''Compare Dict objects.
+
+        Args:
+            other (Dict):
+                Other object to compare with.
+
+        Returns:
+            diff_dict (Dict):
+                Dictionary composed solely of differing entries, with
+                each entry consisting of ( self[key], other[key] ).
+                If self[key] or other[key] does not exist, the values are set to None.
+        '''
 
         if not isinstance( other, Dict ):
             raise TypeError( 'Dict.diff is only valid when comparing two Dict objects.' )
