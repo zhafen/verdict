@@ -1086,6 +1086,8 @@ class Dict( collections.Mapping ):
             self.to_json( filepath, *args, **kwargs )
         elif filetype in [ '.h5', '.hdf5' ]:
             self.to_hdf5( filepath, *args, **kwargs )
+        else:
+            raise IOError( 'Unrecognized filetype: {}'.format( filetype ) )
 
     ########################################################################
 
@@ -1106,6 +1108,8 @@ class Dict( collections.Mapping ):
             return Dict.from_json( filepath, *args, **kwargs )
         elif filetype in [ '.h5', '.hdf5' ]:
             return Dict.from_hdf5( filepath, *args, **kwargs )
+        else:
+            raise IOError( 'Unrecognized filetype: {}'.format( filetype ) )
 
     ########################################################################
 
