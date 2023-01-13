@@ -1070,6 +1070,27 @@ class Dict( collections.Mapping ):
 
     ########################################################################
 
+    def save( self, filepath, *args, **kwargs ):
+
+        filetype = os.path.splitext( filepath )[1]
+        if filetype == '.json':
+            self.to_json( filepath, *args, **kwargs )
+        elif filetype in [ '.h5', '.hdf5' ]:
+            self.to_hdf5( filepath, *args, **kwargs )
+
+    ########################################################################
+
+    @classmethod
+    def load( cls, filepath, *args, **kwargs ):
+
+        filetype = os.path.splitext( filepath )[1]
+        if filetype == '.json':
+            return Dict.from_json( filepath, *args, **kwargs )
+        elif filetype in [ '.h5', '.hdf5' ]:
+            return Dict.from_hdf5( filepath, *args, **kwargs )
+
+    ########################################################################
+
     @classmethod
     def from_class_and_args( cls, contained_cls, args, default_args={}, ):
         '''Alternate constructor. Creates a Dict of contained_cls objects,

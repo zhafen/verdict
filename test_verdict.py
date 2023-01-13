@@ -1571,6 +1571,69 @@ class TestVerDictJSON( unittest.TestCase ):
 ########################################################################
 ########################################################################
 
+class TestVerDictSaveLoad( unittest.TestCase ):
+
+    def setUp( self ):
+
+        self.savefiles = [ 'test.json', 'test.hdf5', 'test.h5' ]
+        self.kwargs = {}
+
+    def tearDown( self ):
+
+        # Delete spurious files
+        for savefile in self.savefiles:
+            if os.path.isfile( savefile ):
+                os.remove( savefile )
+
+    ########################################################################
+
+    def test_saveload( self ):
+
+        # Test data
+        d = verdict.Dict( {
+            1 : verdict.Dict( {
+                'a': np.array([ 1., 2. ]),
+                'b': np.array([ 3., 4. ]),
+            } ),
+            2 : verdict.Dict( {
+                'a': np.array([ 5., 6. ]),
+                'b': np.array([ 7., 8. ]),
+            } ),
+        } )
+        attrs = { 'x' : 1.5, }
+
+        def check_values( expected, actual ):
+            for key, item in expected.items():
+                for inner_key, inner_item in item.items():
+                    npt.assert_allclose(
+                        inner_item,
+                        actual[str(key)][inner_key],
+                    )
+
+        for i, savefile in enumerate( self.savefiles ):
+
+            # Check saving
+            d.save( savefile )
+
+            # JSON comparison
+            if i == 0:
+                # Compare
+                with open( savefile ) as f:
+                    actual = json.load(f)
+                check_values( d, actual )
+
+            # HDF5 comparison
+            else:
+                f = h5py.File( savefile, 'r' )
+                check_values( d, f )
+
+            # Check loading
+            d2 = verdict.Dict.load( savefile )
+            check_values( d, d2 )
+
+########################################################################
+########################################################################
+
 class TestDictFromDefaultsAndVariations( unittest.TestCase ):
 
     def test_default( self ):
