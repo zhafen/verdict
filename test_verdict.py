@@ -400,6 +400,18 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
+    def test_diff_nested( self ):
+
+        d1 = verdict.Dict( { 1 : 9, 2 : { 'a': 1.0, 'b': 2.0, } } )
+        d2 = verdict.Dict( { 1 : 3, 2 : { 'a': 1.0, 'b': 2.1, } } )
+
+        expected = { 1 : ( 9, 3 ), 2 : { 'b': ( 2.0, 2.1 ) } }
+
+        actual = d1.diff( d2 )
+        self.assertEqual( expected, actual )
+
+    ########################################################################
+
     def test_sum_contents( self ):
 
         d1 = verdict.Dict( { 1 : 1, 2 : 2, 3 : 3, } )

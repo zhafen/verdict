@@ -396,7 +396,12 @@ class Dict( collections.Mapping ):
         for key, item in self.items():
 
             if key in other:
-                if item != other[key]:
+
+                # Both dictionaries
+                if isinstance( item, Dict ) and isinstance( other[key], Dict ):
+                    diff_dict[key] = item.diff( other[key] )
+                # Both values
+                elif item != other[key]:
                     diff_dict[key] = ( item, other[key] )
 
         return diff_dict
