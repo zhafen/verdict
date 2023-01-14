@@ -1486,6 +1486,23 @@ class TestVerDictJSON( unittest.TestCase ):
 
     ########################################################################
 
+    def test_to_json_tuplets( self ):
+
+        d = verdict.Dict( {
+            1 : 2,
+            2 : (
+                None,
+                verdict.Dict( {
+                    'a': np.array([ 5., 6. ]),
+                    'b': np.array([ 7., 8. ]),
+                } ),
+            ),
+        } )
+
+        d.to_json( self.savefile, **self.kwargs )
+
+    ########################################################################
+
     def test_to_json_additional_nesting( self ):
 
         # Test data

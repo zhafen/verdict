@@ -1023,6 +1023,8 @@ class Dict( collections.Mapping ):
                 formatted = list( data )
             elif isinstance( data, set ):
                 formatted = list( data )
+            elif isinstance( data, tuple ):
+                formatted = list( data )
             else:
                 formatted = data
 
