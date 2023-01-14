@@ -415,6 +415,10 @@ class Dict( collections.Mapping ):
                 # Both dictionaries
                 if isinstance( item, Dict ) and isinstance( other[key], Dict ):
                     diff_dict[key] = item.diff( other[key] )
+                # Float comparison
+                elif isinstance( item, float ):
+                    if not np.allclose( item, other[key] ):
+                        diff_dict[key] = ( item, other[key] )
                 # Otherwise
                 elif item != other[key]:
                     diff_dict[key] = ( item, other[key] )
