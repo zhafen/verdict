@@ -436,6 +436,9 @@ class Dict( collections.Mapping ):
             # If not in self (added case)
             diff_dict[key] = ( None, item )
 
+        # Remove empties
+        diff_dict.remove_empty_items()
+
         return diff_dict
 
     def sum_contents( self ):
