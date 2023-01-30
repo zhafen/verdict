@@ -102,6 +102,10 @@ class Dict( collections.Mapping ):
 
             self[key].setitem( more_keys[0], item, *more_keys[1:] )
 
+    def setitem_via_list( self, keys_list, item ):
+        '''Set item given a list of keys.'''
+        self.setitem( keys_list[0], item, *keys_list[1:] )
+
     def __delitem__( self, key ):
         del self._storage[key]
 
