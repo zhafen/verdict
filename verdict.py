@@ -1024,6 +1024,9 @@ class Dict( collections.Mapping ):
             else:
                 raise IOError( 'File {} already exists'.format( filepath ) )
 
+        # Ensure all contained dictionaries are verdict Dicts
+        self = Dict( self )
+
         # Format data
         def recursive_format( data ):
 
