@@ -1519,8 +1519,8 @@ def if_byte_then_to_str( a ):
 
         # Assume that if the first element is a byte-type then all are bytes, and vice versa.
         try:
-            first_element_index = [ np.array([ 0, ]) for _ in range( len( a.shape ) ) ]
-            if hasattr( a[first_element_index][0], 'decode' ):
+            first_element = np.array( a ).flat[0]
+            if hasattr( first_element, 'decode' ):
                     a = a.astype( 'str' )
         # Slower, simpler recursive option when necessary
         except (UnicodeDecodeError, AttributeError):
