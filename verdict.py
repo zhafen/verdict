@@ -237,6 +237,13 @@ class Dict( collections.Mapping ):
 
         results = {}
 
+        # For shallow dictionaries
+        if self.depth() == 1:
+            for key, item in self.items():
+                results[item] = key
+
+            return Dict( results )
+
         # Populate results dictionary
         for key, item in self.items():
             for inner_key in item.keys():

@@ -486,6 +486,21 @@ class TestVerDict( unittest.TestCase ):
 
     ########################################################################
 
+    def test_transpose_top_level( self ):
+        d = verdict.Dict( {
+            'a': 1,
+            'b': 2,
+        } )
+        
+        expected = verdict.Dict( {
+            1: 'a',
+            2: 'b',
+        } )
+
+        self.assertEqual( d.transpose(), expected )
+
+    ########################################################################
+
     def test_array( self ):
 
         d = verdict.Dict( {
